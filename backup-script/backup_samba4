@@ -60,9 +60,11 @@
 #       time format: ISO 8601 24-hour clock system [hh][mm][ss] (basic format).
 
 
-# where to store backups ( change this ) STOREDIR=/home/backups/`hostname -s`
+# where to store backups ( change this ) 
+STOREDIR=/home/backups/`hostname -s`
 
-# this creates an extra acl backup of sysvol with getfacl -R (yes/no) BACKUP_SYSVOL_ACL="yes"
+# this creates an extra acl backup of sysvol with getfacl -R (yes/no) 
+BACKUP_SYSVOL_ACL="yes"
 
 # Full /etc backup (yes/no)
 BACKUP_ETC="yes"
@@ -70,13 +72,17 @@ BACKUP_ETC="yes"
 # Number of days to keep the backup
 DAYS=30
 
-# KEEP_DAYS, keeps every date with 01 and 15 in the backup (yes/no) # while we obey the "DAYS" if set to no, only DAYS settings do apply # if you dont want numberd backup files like : sysvol-2015-12-10-0.tar.bz2 set to: yes # but you want timed backup files like : sysvol-2015-12-10_091209.tar.gz set to: time
-
-# So options to set are :  yes, no, time KEEP_DAYS="no"
-#Does not work yet
+# KEEP_DAYS, keeps every date with 01 and 15 in the backup (yes/no) 
+# while we obey the "DAYS" if set to no, only DAYS settings do apply 
+# if you dont want numberd backup files like : sysvol-2015-12-10-0.tar.bz2 set to: yes 
+# but you want timed backup files like : sysvol-2015-12-10_091209.tar.gz set to: time
+# So options to set are :  yes, no, time 
+KEEP_DAYS="no"
 
 # The day numbers of the month to keep, only effective if KEEP_DAYS="yes" !
-# if you did set keep_days=time you will keep hours of the day. ( like 01:00 and 15:00 ) # timed files are in KEEP_DAY1="01"
+# if you did set keep_days=time you will keep hours of the day. ( like 01:00 and 15:00 ) 
+# timed files are in 
+KEEP_DAY1="01"
 KEEP_DAY2="15"
 
 # the commando's this scripts need. 
@@ -168,7 +174,8 @@ if [ "$USER" != "root" ]; then
 fi
 
 
-# Test if GNU tar is installed and is the required version or newer TARVERSION=$(${CMD_TAR} --version | ${CMD_GREP} 'GNU tar' | ${CMD_AWK} '{print $NF}' | \
+# Test if GNU tar is installed and is the required version or newer 
+TARVERSION=$(${CMD_TAR} --version | ${CMD_GREP} 'GNU tar' | ${CMD_AWK} '{print $NF}' | \
              ${CMD_AWK} -F '.' '{print $2}') if [ -n "${TARVERSION}" ] && [ "${TARVERSION}" -ge "27" ]; then
     TARARGS="--acls --xattrs -cjf"
 else
@@ -184,7 +191,9 @@ if [ ! -d $STOREDIR ]; then
 fi
 
 
-# get where the directory that holds smb.conf is stored CONFBASE=$(${CMD_SAMBA} -b | ${CMD_GREP} [C]ONFIGFILE | ${CMD_AWK} '{print $NF}' | ${CMD_AWK} -F '/' '{print $2}') if [ "${CONFBASE}" = "etc" ]; then
+# get where the directory that holds smb.conf is stored 
+CONFBASE=$(${CMD_SAMBA} -b | ${CMD_GREP} [C]ONFIGFILE | ${CMD_AWK} '{print $NF}' | ${CMD_AWK} -F '/' '{print $2}') 
+if [ "${CONFBASE}" = "etc" ]; then
     CONFDIR="/etc"
 elif [ "${CONFBASE}" = "usr" ]; then
     CONFDIR="/usr/local/samba/etc"
@@ -195,12 +204,16 @@ else
 fi
 
 ${DEBUG} "Starting backup with $0"
-# get the directory that holds the private dir PRIVATEBASE=$(${CMD_DIRNAME} $(${CMD_SAMBA} -b | ${CMD_GREP} [P]RIVATE_DIR | ${CMD_AWK} '{print $NF}')) if [ ! -d ${PRIVATEBASE} ]; then
+# get the directory that holds the private dir 
+PRIVATEBASE=$(${CMD_DIRNAME} $(${CMD_SAMBA} -b | ${CMD_GREP} [P]RIVATE_DIR | ${CMD_AWK} '{print $NF}')) 
+if [ ! -d ${PRIVATEBASE} ]; then
     ${DEBUG} "Missing or wrong provision directory ${PRIVATEBASE}"
     exit 1
 fi
 
-# get the directory that holds the sysvol dir CONFILE=$(${CMD_SAMBA} -b | ${CMD_GREP} [C]ONFIGFILE | ${CMD_AWK} '{print $NF}') SYSVOLBASE=$(${CMD_CAT} ${CONFILE} | ${CMD_GREP} sysvol | ${CMD_GREP} scripts | ${CMD_AWK} '{print $NF}' | ${CMD_SED} 's/sysvol.*//')
+# get the directory that holds the sysvol dir 
+CONFILE=$(${CMD_SAMBA} -b | ${CMD_GREP} [C]ONFIGFILE | ${CMD_AWK} '{print $NF}') 
+SYSVOLBASE=$(${CMD_CAT} ${CONFILE} | ${CMD_GREP} sysvol | ${CMD_GREP} scripts | ${CMD_AWK} '{print $NF}' | ${CMD_SED} 's/sysvol.*//')
 
 # backup .tdb & .ldb files
 backup_file () {
@@ -354,6 +367,7 @@ if [ ${KEEP_DAYS} = "yes" ]; then
     ${DEBUG} "Deleting any backup files over ${DAYS} days old, keeping 1e and 15e."
     ${CMD_FIND} ${STOREDIR} -name "*.bz2" -mtime +${DAYS} -exec  egrep -v "-${KEEP_DAY1}-*.tar.|-${KEEP_DAY2}-*.tar." | ${CMD_RM}  {} \; >/dev/null 2>&1 else
     ${DEBUG} "Deleting any backup files over ${DAYS} days old."
-    ${CMD_FIND} ${STOREDIR} -name "*.bz2" -mtime +${DAYS} -exec ${CMD_RM}  {} \; >/dev/null 2>&1 fi
+    ${CMD_FIND} ${STOREDIR} -name "*.bz2" -mtime +${DAYS} -exec ${CMD_RM}  {} \; >/dev/null 2>&1 
+fi
 
 exit 0
