@@ -37,8 +37,8 @@ timed files are in
 - KEEP_DAY1="01"
 - KEEP_DAY2="15"
 
-# what to backup of samba, this should normaly not be needed to change.
-# The full paths are extracted from the running samba.
+What to backup of samba, this should normaly not be needed to change.
+The full paths are extracted from the running samba.
 - DIRS="private sysvol samba"
 
 The location for the command file, can be any place any file name.
