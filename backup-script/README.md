@@ -8,7 +8,7 @@ You need to configure the following in the script:
 
 STOREDIR=/home/backups/`hostname -s`
 
-# this creates an extra acl backup of sysvol with getfacl -R (yes/no) 
+* this creates an extra acl backup of sysvol with getfacl -R (yes/no) 
 BACKUP_SYSVOL_ACL="yes"
 
 ## original not in samba script but very usefull.
