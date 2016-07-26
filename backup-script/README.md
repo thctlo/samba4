@@ -1,8 +1,19 @@
-# backup_samba4  
+# backup_samba4
 ==============
 
 This is a modified version of the original backup_samba4 script.
-The original script is found in the samba source. 
+The original script is found in the samba source.
+
+You need to add something like this in cron. 
+\# minute (0-59),
+\# |     hour (0-23),
+\# |     |       day of the month (1-31),
+\# |     |       |       month of the year (1-12),
+\# |     |       |       |       day of the week (0-7 with 0=7=Sunday).
+\# |     |       |       |       |       user
+\# |     |       |       |       |       |       command
+6 7,10,13,16,19 * * 1,2,3,4,5 root /PATH_TO/backup_samba4 &> /dev/null
+
 
 You need to configure the following in the script: 
 
