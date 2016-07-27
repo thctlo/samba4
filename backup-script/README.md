@@ -7,6 +7,7 @@ This is a modified version of the original backup_samba4 script.
 The original script is found in the samba source.
 
 You need to add something like this in cron.
+
 6 7,10,13,16,19 * * 1,2,3,4,5 root /PATH_TO/backup_samba4 &> /dev/null
 
 
