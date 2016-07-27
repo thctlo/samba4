@@ -21,6 +21,7 @@ This example shows a 5x backup during work hours on weekdays
 and last at 23:00 for the daily (normal) backup procedures.
 
 6 7,10,13,16,19 * * 1,2,3,4,5 root /PATH_TO/backup_samba4 &> /dev/null
+
 0 23 * * * root /PATH_TO/backup_samba4 &> /dev/null
 
 You need to configure the following in the script: 
