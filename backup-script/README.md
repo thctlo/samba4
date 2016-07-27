@@ -29,7 +29,7 @@ You need to configure the following in the script:
 A Config example
 ----------------
 The location to backup to.
-- STOREDIR=/home/backups/`hostname -s`
+`- STOREDIR=/home/backups/`hostname -s``
 
 This creates an extra acl backup of sysvol with getfacl -R (yes/no).
 Best is not to change this.
