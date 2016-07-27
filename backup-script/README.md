@@ -11,7 +11,7 @@ The first time you start it, run it with --debug, so you can check if all is ok.
 How does it work: 
 The script collects the commands use in full path, if one isn't found you get a message and the script ends.
 The script extracts the sysvol etc and private folders in full paths from the running samba.
-The script uses a counter to make multple backups on the samba day. 
+The script uses a counter to make multple backups on the same day. 
 The script cleans up backup files older then DAYS.
 This all is done without stopping samba.
 
