@@ -72,6 +72,7 @@ BACKUP_ETC="yes"
 # Number of days to keep the backup
 DAYS=30
 
+#TODO/Not working jet, keep no.
 # KEEP_DAYS, keeps every date with 01 and 15 in the backup (yes/no) 
 # while we obey the "DAYS" if set to no, only DAYS settings do apply 
 # if you dont want numberd backup files like : sysvol-2015-12-10-0.tar.bz2 set to: yes 
@@ -79,16 +80,17 @@ DAYS=30
 # So options to set are :  yes, no, time 
 KEEP_DAYS="no"
 
+#TODO/Not working jet, keep no.
 # The day numbers of the month to keep, only effective if KEEP_DAYS="yes" !
 # if you did set keep_days=time you will keep hours of the day. ( like 01:00 and 15:00 ) 
 # timed files are in 
 KEEP_DAY1="01"
 KEEP_DAY2="15"
 
-# the commando's this scripts need. 
+# The commando's this scripts need,keep as is.
 SCRIPT_COMMANDS="samba tdbbackup logger tar dirname cat grep echo awk sed date find rm getfacl tail cut wc awk sort"
-# the location for the command file
-SCRIPT_COMMANDS_FILE="/etc/samba/bin/backup_samba4_commands"
+# The location for the command file, keep as is. 
+SCRIPT_COMMANDS_FILE="/etc/samba/backup_samba4_commands"
 
 # what to backup of samba, this should normaly not be needed to change.
 DIRS="private sysvol samba"
@@ -176,13 +178,12 @@ fi
 
 # Test if GNU tar is installed and is the required version or newer 
 TARVERSION=$(${CMD_TAR} --version | ${CMD_GREP} 'GNU tar' | ${CMD_AWK} '{print $NF}' | \
-             ${CMD_AWK} -F '.' '{print $2}') if [ -n "${TARVERSION}" ] && [ "${TARVERSION}" -ge "27" ]; then
+             ${CMD_AWK} -F '.' '{print $2}') 
+if [ -n "${TARVERSION}" ] && [ "${TARVERSION}" -ge "27" ]; then
     TARARGS="--acls --xattrs -cjf"
 else
     TARARGS="-cjf"
 fi
-
-
 
 if [ ! -d $STOREDIR ]; then
     ${DEBUG} "Missing backup directory $STOREDIR"
@@ -225,8 +226,8 @@ backup_file () {
     ${CMD_TDBBACKUP} $1
     Status=$?
     if [ $Status -ne 0 ]; then
-    ${DEBUG} "Error while backing up $1 - status $Status"
-    exit 1
+	${DEBUG} "Error while backing up $1 - status $Status"
+	exit 1
     fi
 }
 
@@ -239,11 +240,11 @@ check_backup_file () {
     COUNTER=$(ls ${STOREDIR} | ${CMD_GREP} ${BACKUPDATE} | sort | ${CMD_GREP} $d | ${CMD_TAIL} -n1 | ${CMD_CUT} -d"-" -f5 | ${CMD_CUT} -d"." -f1)
     echo "Counter = $COUNTER" 
     if [ -z "$COUNTER" ]; then 
-    COUNTER=0
-    BACKUPDATE="${BACKUPDATE}-${COUNTER}"
+        COUNTER=0
+	BACKUPDATE="${BACKUPDATE}-${COUNTER}"
     else 
-    COUNTER=$((COUNTER+1))
-    BACKUPDATE="${BACKUPDATE}-${COUNTER}"
+        COUNTER=$((COUNTER+1))
+        BACKUPDATE="${BACKUPDATE}-${COUNTER}"
     fi
     ${DEBUG} "Message: setting date and counter : ${BACKUPDATE} for  $d"
 }
