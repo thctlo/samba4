@@ -1,17 +1,18 @@
 #!/bin/bash
 #
-# Copyright (C) Matthieu Patou <mat@matws.net> 2010-2011 # 
-# This program is free software; you can redistribute it and/or modify 
-# it under the terms of the GNU General Public License as published by 
-# the Free Software Foundation; either version 3 of the License, or 
+# Copyright (C) Matthieu Patou <mat@matws.net> 2010-2011
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful, 
-# but WITHOUT ANY WARRANTY; without even the implied warranty of 
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License 
+# You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Revised 2013-09-25, Brian Martin, as follows:
@@ -59,40 +60,48 @@
 #       date format: ISO 8601 YYYY-MM-DD (extended format)
 #       time format: ISO 8601 24-hour clock system [hh][mm][ss] (basic format).
 
+## Last modification LvB 27 juli 2016, small corrections.
+## This script is tested on debian Jessie. with samba 4.4.3 ( Recompiled version of debian Stretch. )
 
-# where to store backups ( change this ) 
+# Where to store backups?
+# Change this to you backup location.
 STOREDIR=/home/backups/`hostname -s`
 
-# this creates an extra acl backup of sysvol with getfacl -R (yes/no) 
+# This creates an extra acl backup of sysvol with getfacl -R (yes/no)
+# The default is ok.
 BACKUP_SYSVOL_ACL="yes"
 
 # Full /etc backup (yes/no)
+# The default is ok.
 BACKUP_ETC="yes"
 
 # Number of days to keep the backup
+# The default is ok.
 DAYS=30
 
-#TODO/Not working jet, keep no.
-# KEEP_DAYS, keeps every date with 01 and 15 in the backup (yes/no) 
-# while we obey the "DAYS" if set to no, only DAYS settings do apply 
-# if you dont want numberd backup files like : sysvol-2015-12-10-0.tar.bz2 set to: yes 
+# TODO/Not working yet. 
+# KEEP_DAYS, keeps every date with 01 and 15 in the backup (yes/no)
+# while we obey the "DAYS" if set to no, only DAYS settings do apply
+# if you dont want numberd backup files like : sysvol-2015-12-10-0.tar.bz2 set to: yes
 # but you want timed backup files like : sysvol-2015-12-10_091209.tar.gz set to: time
-# So options to set are :  yes, no, time 
+# So options to set are :  yes, no, time
 KEEP_DAYS="no"
 
-#TODO/Not working jet, keep no.
 # The day numbers of the month to keep, only effective if KEEP_DAYS="yes" !
-# if you did set keep_days=time you will keep hours of the day. ( like 01:00 and 15:00 ) 
-# timed files are in 
+# if you did set keep_days=time you will keep hours of the day. ( like 01:00 and 15:00 )
+# timed files are in
 KEEP_DAY1="01"
 KEEP_DAY2="15"
 
-# The commando's this scripts need,keep as is.
+# the commando's this scripts need. 
+# The default is ok.
 SCRIPT_COMMANDS="samba tdbbackup logger tar dirname cat grep echo awk sed date find rm getfacl tail cut wc awk sort"
-# The location for the command file, keep as is. 
+# the location for the command file
+# The default is ok, but can be any location.
 SCRIPT_COMMANDS_FILE="/etc/samba/backup_samba4_commands"
 
-# what to backup of samba, this should normaly not be needed to change.
+# What to backup of samba, this should normaly not be needed to change.
+# You beter NEVER change this. We get the full paths from samba.
 DIRS="private sysvol samba"
 
 #########################################################################
@@ -117,47 +126,47 @@ fi
 if [ ! -e ${SCRIPT_COMMANDS_FILE} ]; then
     for COMMANDS in ${SCRIPT_COMMANDS} ; do
 #        echo "SCRIPTCOMMAND : $SCRIPT_COMMAND "
-    EVAL_PROG="CMD_"
-    EVAL_PROG_DATA="${COMMANDS^^}"
-    EVAL_DATA="$(which $COMMANDS)"
+	EVAL_PROG="CMD_"
+	EVAL_PROG_DATA="${COMMANDS^^}"
+	EVAL_DATA="$(which $COMMANDS)"
 
-    eval "${EVAL_PROG}${EVAL_PROG_DATA}"="\"${EVAL_DATA}\""
-    EVAL_CHECK="${EVAL_PROG}${EVAL_PROG_DATA}"
+	eval "${EVAL_PROG}${EVAL_PROG_DATA}"="\"${EVAL_DATA}\""
+	EVAL_CHECK="${EVAL_PROG}${EVAL_PROG_DATA}"
 
-    if [ -z "${EVAL_CHECK}" ] || [ -z "${EVAL_DATA}" ]; then
-        echo "Error command ${EVAL_CHECK} is without data"
-        echo "Please adjust this value manualy in the file ${SCRIPT_COMMANDS_FILE}"
-        echo "${EVAL_CHECK}=\"${EVAL_DATA}\"" >> ${SCRIPT_COMMANDS_FILE}
-    else
-        echo "${EVAL_CHECK}=\"${EVAL_DATA}\"" >> ${SCRIPT_COMMANDS_FILE}
-    fi
+	if [ -z "${EVAL_CHECK}" ] || [ -z "${EVAL_DATA}" ]; then
+	    echo "Error command ${EVAL_CHECK} is without data"
+	    echo "Please adjust this value manualy in the file ${SCRIPT_COMMANDS_FILE}"
+	    echo "${EVAL_CHECK}=\"${EVAL_DATA}\"" >> ${SCRIPT_COMMANDS_FILE}
+	else
+	    echo "${EVAL_CHECK}=\"${EVAL_DATA}\"" >> ${SCRIPT_COMMANDS_FILE}
+	fi
     done
     echo "Exitting now...commands file created, please restart the script.."
     exit 1
 else
     source ${SCRIPT_COMMANDS_FILE}
     for COMMANDS in ${SCRIPT_COMMANDS} ; do
-    EVAL2_PROG="CMD_"
-    EVAL2_PROG_DATA=${COMMANDS^^}
-    EVAL2_CHECK="${EVAL2_PROG}${EVAL2_PROG_DATA}"
+	EVAL2_PROG="CMD_"
+	EVAL2_PROG_DATA=${COMMANDS^^}
+	EVAL2_CHECK="${EVAL2_PROG}${EVAL2_PROG_DATA}"
 
-    if [ -z "${EVAL2_CHECK}" ]; then 
-        echo "Error, ${EVAL2_CHECK} does not have a value"
-        echo "Please put the command in the file ${SCRIPT_COMMANDS_FILE}"
-        echo "Exitting now... "
-        exit 1
-    fi
+	if [ -z "${EVAL2_CHECK}" ]; then 
+	    echo "Error, ${EVAL2_CHECK} does not have a value"
+	    echo "Please put the command in the file ${SCRIPT_COMMANDS_FILE}"
+	    echo "Exitting now... "
+	    exit 1
+	fi
 
-    if [ ! -e "${!EVAL2_CHECK}" ]; then
-        echo "Error, ${EVAL2_CHECK} is unset or set to the empty string"
-        echo "Please correct the command in the file ${SCRIPT_COMMANDS_FILE}"
-        echo "Exitting now... "
-        exit 1 
-    fi
+	if [ ! -e "${!EVAL2_CHECK}" ]; then
+	    echo "Error, ${EVAL2_CHECK} is unset or set to the empty string"
+	    echo "Please correct the command in the file ${SCRIPT_COMMANDS_FILE}"
+	    echo "Exitting now... "
+	    exit 1 
+	fi
 
-    if  [ "$1" = "--debug" ]; then
-        echo "Command checks : ${EVAL2_CHECK} contains : ${!EVAL2_CHECK}"
-    fi
+	if  [ "$1" = "--debug" ]; then
+	    echo "Command checks : ${EVAL2_CHECK} contains : ${!EVAL2_CHECK}"
+	fi
 
     done
 fi
@@ -176,14 +185,16 @@ if [ "$USER" != "root" ]; then
 fi
 
 
-# Test if GNU tar is installed and is the required version or newer 
+# Test if GNU tar is installed and is the required version or newer
 TARVERSION=$(${CMD_TAR} --version | ${CMD_GREP} 'GNU tar' | ${CMD_AWK} '{print $NF}' | \
-             ${CMD_AWK} -F '.' '{print $2}') 
+             ${CMD_AWK} -F '.' '{print $2}')
 if [ -n "${TARVERSION}" ] && [ "${TARVERSION}" -ge "27" ]; then
     TARARGS="--acls --xattrs -cjf"
 else
     TARARGS="-cjf"
 fi
+
+
 
 if [ ! -d $STOREDIR ]; then
     ${DEBUG} "Missing backup directory $STOREDIR"
@@ -192,8 +203,8 @@ if [ ! -d $STOREDIR ]; then
 fi
 
 
-# get where the directory that holds smb.conf is stored 
-CONFBASE=$(${CMD_SAMBA} -b | ${CMD_GREP} [C]ONFIGFILE | ${CMD_AWK} '{print $NF}' | ${CMD_AWK} -F '/' '{print $2}') 
+# get where the directory that holds smb.conf is stored
+CONFBASE=$(${CMD_SAMBA} -b | ${CMD_GREP} [C]ONFIGFILE | ${CMD_AWK} '{print $NF}' | ${CMD_AWK} -F '/' '{print $2}')
 if [ "${CONFBASE}" = "etc" ]; then
     CONFDIR="/etc"
 elif [ "${CONFBASE}" = "usr" ]; then
@@ -205,15 +216,15 @@ else
 fi
 
 ${DEBUG} "Starting backup with $0"
-# get the directory that holds the private dir 
-PRIVATEBASE=$(${CMD_DIRNAME} $(${CMD_SAMBA} -b | ${CMD_GREP} [P]RIVATE_DIR | ${CMD_AWK} '{print $NF}')) 
+# get the directory that holds the private dir
+PRIVATEBASE=$(${CMD_DIRNAME} $(${CMD_SAMBA} -b | ${CMD_GREP} [P]RIVATE_DIR | ${CMD_AWK} '{print $NF}'))
 if [ ! -d ${PRIVATEBASE} ]; then
     ${DEBUG} "Missing or wrong provision directory ${PRIVATEBASE}"
     exit 1
 fi
 
-# get the directory that holds the sysvol dir 
-CONFILE=$(${CMD_SAMBA} -b | ${CMD_GREP} [C]ONFIGFILE | ${CMD_AWK} '{print $NF}') 
+# get the directory that holds the sysvol dir
+CONFILE=$(${CMD_SAMBA} -b | ${CMD_GREP} [C]ONFIGFILE | ${CMD_AWK} '{print $NF}')
 SYSVOLBASE=$(${CMD_CAT} ${CONFILE} | ${CMD_GREP} sysvol | ${CMD_GREP} scripts | ${CMD_AWK} '{print $NF}' | ${CMD_SED} 's/sysvol.*//')
 
 # backup .tdb & .ldb files
@@ -234,115 +245,113 @@ backup_file () {
 # check for existing backup files, if exist, create new files with following numbers.
 check_backup_file () {
     BACKUPDATE=$(${CMD_DATE} +%Y-%m-%d)	# ISO 8601 standard date.
-    echo "Backupdate = $BACKUPDATE"
     ${DEBUG} "Message: checking for previous backups of this day : $d"
     # determin last use counter nr
     COUNTER=$(ls ${STOREDIR} | ${CMD_GREP} ${BACKUPDATE} | sort | ${CMD_GREP} $d | ${CMD_TAIL} -n1 | ${CMD_CUT} -d"-" -f5 | ${CMD_CUT} -d"." -f1)
-    echo "Counter = $COUNTER" 
     if [ -z "$COUNTER" ]; then 
-        COUNTER=0
+	COUNTER=0
 	BACKUPDATE="${BACKUPDATE}-${COUNTER}"
     else 
-        COUNTER=$((COUNTER+1))
-        BACKUPDATE="${BACKUPDATE}-${COUNTER}"
+	COUNTER=$((COUNTER+1))
+	BACKUPDATE="${BACKUPDATE}-${COUNTER}"
     fi
     ${DEBUG} "Message: setting date and counter : ${BACKUPDATE} for  $d"
 }
 
 for d in $DIRS;do
     if [ "$d" = "private" ]; then
-    check_backup_file
+	check_backup_file
         cd ${PRIVATEBASE} 
         relativedirname=$(${CMD_FIND} . -type d -name "$d" -prune)
-        ${CMD_FIND} $relativedirname -name "*.ldb.bak" -exec ${CMD_RM} {} \;
-        ${CMD_FIND} $relativedirname -name "*.tdb.bak" -exec ${CMD_RM} {} \;
-        for ldb in $(${CMD_FIND} $relativedirname -name "*.ldb"); do 
+	    ${CMD_FIND} $relativedirname -name "*.ldb.bak" -exec ${CMD_RM} {} \;
+	    ${CMD_FIND} $relativedirname -name "*.tdb.bak" -exec ${CMD_RM} {} \;
+	    for ldb in $(${CMD_FIND} $relativedirname -name "*.ldb"); do 
             # backup .ldb files
-	    backup_file $ldb
-        done
+		    backup_file $ldb
+	    done
         for tdb in $(${CMD_FIND} $d -name "*.tdb"); do
             # backup .tdb files
-	    backup_file $tdb
+		    backup_file $tdb
         done
-        # Run the backup.
-        # --warning=no-file-ignored suppresses "socket ignored" messages.
+	    # Run the backup.
+	    # --warning=no-file-ignored suppresses "socket ignored" messages.
         # --warning=no-file-changed suppresses "file changed as we read it"
-        ${CMD_TAR} ${TARARGS} ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2  \
+	    ${CMD_TAR} ${TARARGS} ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2  \
             $relativedirname --exclude='*.ldb' --exclude='*.tdb' \
             --warning=no-file-ignored --warning=no-file-changed \
             --transform 's/.ldb.bak/.ldb/' --transform 's/.tdb.bak/.tdb/'
-        Status=$?
-        if [ $Status -ne 0 -a $Status -ne 1 ]; then
+	    Status=$?
+	    if [ $Status -ne 0 -a $Status -ne 1 ]; then
             # Ignore 1 - private dir is always changing.
-            ${DEBUG} "Error archiving:"
-            ${DEBUG} "    ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2"
-            ${DEBUG} "    Status: $Status"
-            exit 1
-        else
-            ${DEBUG} "Backup Status ${d}: ok"
-        fi
+	        ${DEBUG} "Error archiving:"
+	        ${DEBUG} "    ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2"
+	        ${DEBUG} "    Status: $Status"
+	        exit 1
+	    else
+	        ${DEBUG} "Backup Status ${d}: ok"
+	    fi
         # delete any .bak files
-        ${CMD_FIND} $relativedirname -name "*.ldb.bak" -exec ${CMD_RM} {} \;
-        ${CMD_FIND} $relativedirname -name "*.tdb.bak" -exec ${CMD_RM} {} \;
+	    ${CMD_FIND} $relativedirname -name "*.ldb.bak" -exec ${CMD_RM} {} \;
+	    ${CMD_FIND} $relativedirname -name "*.tdb.bak" -exec ${CMD_RM} {} \;
     elif [ "$d" = "sysvol" ]; then
-    check_backup_file
+	check_backup_file
         cd ${SYSVOLBASE}
         relativedirname=$(${CMD_FIND} . -type d -name "$d" -prune)
-        # Run the backup.
-        # --warning=no-file-ignored suppresses "socket ignored" messages.
+	    # Run the backup.
+	    # --warning=no-file-ignored suppresses "socket ignored" messages.
         # --warning=no-file-changed suppresses "file changed as we read it"
-        ${CMD_TAR} ${TARARGS} ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2  \
+	    ${CMD_TAR} ${TARARGS} ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2  \
             $relativedirname --warning=no-file-ignored --warning=no-file-changed
-        Status=$?
-        if [ $Status -ne 0 ]; then
-            ${DEBUG} "Error archiving:"
-            ${DEBUG} "    ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2"
-            ${DEBUG} "Status: $Status"
-            exit 1
-        else
-            ${DEBUG} "Backup Status ${d}: ok"
-        fi
-        if [ ${BACKUP_SYSVOL_ACL} = "yes" ]; then
-	# ! Dont use sysvol here, it messes up the sysvol counter.
-	d=acl-sys_vol
-            check_backup_file
-	${DEBUG} "creating sysvol ACL file"
-	${CMD_GETFACL} -R sysvol > ${STOREDIR}/${d}.${BACKUPDATE}.acl
-	${CMD_TAR} ${TARARGS} ${STOREDIR}/${d}.${BACKUPDATE}.acl.tar.bz2 \
-	${STOREDIR}/${d}.${BACKUPDATE}.acl >/dev/null 2>&1
+	    Status=$?
+	    if [ $Status -ne 0 ]; then
+	        ${DEBUG} "Error archiving:"
+	        ${DEBUG} "    ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2"
+	        ${DEBUG} "Status: $Status"
+	        exit 1
+	    else
+	        ${DEBUG} "Backup Status ${d}: ok"
+	    fi
+	    if [ ${BACKUP_SYSVOL_ACL} = "yes" ]; then
+		# ! Dont use sysvol here, it messes up the sysvol counter.
+		d=acl-sys_vol
+	        check_backup_file
+		${DEBUG} "creating sysvol ACL file"
+		${CMD_GETFACL} -R sysvol > ${STOREDIR}/${d}.${BACKUPDATE}.acl
+		${CMD_TAR} ${TARARGS} ${STOREDIR}/${d}.${BACKUPDATE}.acl.tar.bz2 \
+		${STOREDIR}/${d}.${BACKUPDATE}.acl >/dev/null 2>&1
 
-	if [ $? -ne 0 ]; then
-	    ${DEBUG} "Error while archiving \
-	    ${STOREDIR}/sysvolacl.${BACKUPDATE}.tar.bz2"
-	    exit 1
-	else
-	    ${DEBUG} "Backup Status sysvol acl: ok"
-	    ${CMD_RM} ${STOREDIR}/${d}.${BACKUPDATE}.acl
-	fi
-	#
-        fi
+		if [ $? -ne 0 ]; then
+		    ${DEBUG} "Error while archiving \
+		    ${STOREDIR}/sysvolacl.${BACKUPDATE}.tar.bz2"
+		    exit 1
+		else
+		    ${DEBUG} "Backup Status sysvol acl: ok"
+		    ${CMD_RM} ${STOREDIR}/${d}.${BACKUPDATE}.acl
+		fi
+		#
+	    fi
     elif [ "$d" = "samba" ]; then
-    check_backup_file
+	check_backup_file
         cd ${CONFDIR}
         if [ "${CONFILE}" = "/etc/samba/smb.conf" ]; then
             relativedirname=$(${CMD_FIND} . -type d -name "$d" -prune)
         else
             relativedirname=$(${CMD_FIND} . -type d -name "etc" -prune)
         fi
-        # Run the backup.
-        # --warning=no-file-ignored suppresses "socket ignored" messages.
+	    # Run the backup.
+	    # --warning=no-file-ignored suppresses "socket ignored" messages.
         # --warning=no-file-changed suppresses "file changed as we read it"
-        ${CMD_TAR} ${TARARGS} ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2  \
+	    ${CMD_TAR} ${TARARGS} ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2  \
             $relativedirname --warning=no-file-ignored --warning=no-file-changed
-        Status=$?
-        if [ $Status -ne 0 ]; then
-            ${DEBUG} "Error archiving:"
-            ${DEBUG} "    ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2"
-            ${DEBUG} "Status: $Status"
-            exit 1
-        else
-            ${DEBUG} "Backup Status ${d}: ok"
-        fi
+	    Status=$?
+	    if [ $Status -ne 0 ]; then
+	        ${DEBUG} "Error archiving:"
+	        ${DEBUG} "    ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2"
+	        ${DEBUG} "Status: $Status"
+	        exit 1
+	    else
+	        ${DEBUG} "Backup Status ${d}: ok"
+	    fi
     fi
 done
 
@@ -363,12 +372,14 @@ if [ ${BACKUP_ETC} = "yes" ]; then
     fi
 fi
 
+## TODO/Not working yet
 # Remove any files over 30 days old from backup dir, keep the first and 15 of the month.
 if [ ${KEEP_DAYS} = "yes" ]; then 
     ${DEBUG} "Deleting any backup files over ${DAYS} days old, keeping 1e and 15e."
-    ${CMD_FIND} ${STOREDIR} -name "*.bz2" -mtime +${DAYS} -exec  egrep -v "-${KEEP_DAY1}-*.tar.|-${KEEP_DAY2}-*.tar." | ${CMD_RM}  {} \; >/dev/null 2>&1 else
+    ${CMD_FIND} ${STOREDIR} -name "*.bz2" -mtime +${DAYS} -exec  egrep -v "-${KEEP_DAY1}-*.tar.|-${KEEP_DAY2}-*.tar." | ${CMD_RM}  {} \; >/dev/null 2>&1
+else
     ${DEBUG} "Deleting any backup files over ${DAYS} days old."
-    ${CMD_FIND} ${STOREDIR} -name "*.bz2" -mtime +${DAYS} -exec ${CMD_RM}  {} \; >/dev/null 2>&1 
+    ${CMD_FIND} ${STOREDIR} -name "*.bz2" -mtime +${DAYS} -exec ${CMD_RM}  {} \; >/dev/null 2>&1
 fi
 
 exit 0
