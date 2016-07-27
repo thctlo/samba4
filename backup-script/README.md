@@ -1,15 +1,27 @@
 # backup_samba4
 ==============
-The script is tested on debian Wheezy and Debian Jessie.
-But should work with any linux os.
+The script is tested on debian Wheezy and Debian Jessie, but should work with any linux os.
+This is a modified version of the backup_samba4 script, the original script is found in the samba source.
 
-This is a modified version of the original backup_samba4 script.
-The original script is found in the samba source.
+By default the scripts logs tot syslog. 
+running ./backup_samba4 --debug  give console output. 
 
-You need to add something like this in cron.
+The first time you start it, run it with --debug, so you can check if all is ok.
+
+How does it work: 
+The script collects the commands use in full path, if one isn't found you get a message and the script ends.
+The script extracts the sysvol etc and private folders in full paths from the running samba.
+The script uses a counter to make multple backups on the samba day. 
+The script cleans up backup files older then DAYS.
+This all is done without stopping samba.
+
+
+You need to add something like this in cron. 
+This example shows a 5x backup during work hours on weekdays
+and last at 23:00 for the daily (normal) backup procedures.
 
 6 7,10,13,16,19 * * 1,2,3,4,5 root /PATH_TO/backup_samba4 &> /dev/null
-
+0 23 * * * root /PATH_TO/backup_samba4 &> /dev/null
 
 You need to configure the following in the script: 
 
@@ -19,13 +31,15 @@ The location to backup to.
 - STOREDIR=/home/backups/`hostname -s`
 
 This creates an extra acl backup of sysvol with getfacl -R (yes/no).
+Best is not to change this.
 - BACKUP_SYSVOL_ACL="yes"
 
 Original not in samba script but very usefull.
 Full /etc backup (yes/no).
+Best is not to change this.
 - BACKUP_ETC="yes"
 
-Number of days to keep the backup
+Number of days to keep the backup.
 - DAYS=30
 
 TODO/ Not working yet, but if you know how, you can add the code. ;-)
