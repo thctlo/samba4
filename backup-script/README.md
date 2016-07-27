@@ -1,9 +1,9 @@
 # backup_samba4
 ==============
+
 The script is tested on debian Wheezy and Debian Jessie, but should work with any linux os.
-----------------
 This is a modified version of the backup_samba4 script, the original script is found in the samba source.
-----------------
+
 
 By default the scripts logs tot syslog. 
 running ./backup_samba4 --debug  give console output. 
