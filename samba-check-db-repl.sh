@@ -253,22 +253,13 @@ if [ "${SETREMOVELOG}" = "yes" ] || [ "${SETREMOVELOG}" = "no" ] ; then
 fi
 
 ## used for samba-tool drs showrepl
-## exected failure is always 0
+## expected success is depending on total of DC's.
+expected_success=0
+## expected failure is always 0
 expected_failure=0
-## expected succes is depending on total of DC's.
-COUNTER=0
-for x in `echo ${DCS}` ; do COUNTER=$(($COUNTER +1 )) ; DCS_COUNTER=${COUNTER}; done
-if [ $DCS_COUNTER -eq 2 ]; then SAMBA_DCS_COUNTER=10 ; fi
-if [ $DCS_COUNTER -eq 3 ]; then SAMBA_DCS_COUNTER=20 ; fi
-if [ $DCS_COUNTER -eq 4 ]; then SAMBA_DCS_COUNTER=30 ; fi
-if [ $DCS_COUNTER -eq 5 ]; then SAMBA_DCS_COUNTER=40 ; fi
-if [ $DCS_COUNTER -eq 6 ]; then SAMBA_DCS_COUNTER=50 ; fi
-if [ $DCS_COUNTER -eq 7 ]; then SAMBA_DCS_COUNTER=60 ; fi
-if [ $DCS_COUNTER -eq 8 ]; then SAMBA_DCS_COUNTER=70 ; fi
-if [ $DCS_COUNTER -eq 9 ]; then SAMBA_DCS_COUNTER=80 ; fi
-if [ $DCS_COUNTER -eq 10 ]; then SAMBA_DCS_COUNTER=90 ; fi
-## REALLY MORE THEN 10 DC'S ??
-expected_success=$SAMBA_DCS_COUNTER
+for x in ${SAMBA_DCS}; do
+    expected_success=$((expected_success +=10 ))
+done
 
 if [ ! -z ${EMAIL_REPORT_ADDRESS} ]; then
     if [ "${SAMBA_CHECKDB_WITH_LDAPCMD}" = "yes" ]; then
