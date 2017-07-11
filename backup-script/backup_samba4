@@ -64,7 +64,7 @@
 ## This script is tested on debian Jessie. with samba 4.4.3 ( Recompiled version of debian Stretch. )
 
 # Where to store backups?
-# Change this to you backup location.
+# Change this to your backup location.
 STOREDIR=/home/backups/`hostname -s`
 
 # This creates an extra acl backup of sysvol with getfacl -R (yes/no)
@@ -79,11 +79,11 @@ BACKUP_ETC="yes"
 # The default is ok.
 DAYS=30
 
-# TODO/Not working yet. 
+# TODO/Not working yet.
 # KEEP_DAYS, keeps every date with 01 and 15 in the backup (yes/no)
 # while we obey the "DAYS" if set to no, only DAYS settings do apply
-# if you dont want numberd backup files like : sysvol-2015-12-10-0.tar.bz2 set to: yes
-# but you want timed backup files like : sysvol-2015-12-10_091209.tar.gz set to: time
+# if you dont want numbered backup files like : sysvol-2015-12-10-0.tar.bz2 set to: yes
+# but if you want timed backup files like : sysvol-2015-12-10_091209.tar.gz set to: time
 # So options to set are :  yes, no, time
 KEEP_DAYS="no"
 
@@ -93,15 +93,15 @@ KEEP_DAYS="no"
 KEEP_DAY1="01"
 KEEP_DAY2="15"
 
-# the commando's this scripts need. 
+# The commandos this scripts needs.
 # The default is ok.
 SCRIPT_COMMANDS="samba tdbbackup logger tar dirname cat grep echo awk sed date find rm getfacl tail cut wc awk sort"
-# the location for the command file
+# The location for the command file.
 # The default is ok, but can be any location.
 SCRIPT_COMMANDS_FILE="/etc/samba/backup_samba4_commands"
 
-# What to backup of samba, this should normaly not be needed to change.
-# You beter NEVER change this. We get the full paths from samba.
+# What to backup of samba, this should normally not have to be changed.
+# You better NEVER change this. We get the full paths from samba.
 DIRS="private sysvol samba"
 
 #########################################################################
@@ -135,13 +135,13 @@ if [ ! -e ${SCRIPT_COMMANDS_FILE} ]; then
 
 	if [ -z "${EVAL_CHECK}" ] || [ -z "${EVAL_DATA}" ]; then
 	    echo "Error command ${EVAL_CHECK} is without data"
-	    echo "Please adjust this value manualy in the file ${SCRIPT_COMMANDS_FILE}"
+	    echo "Please adjust this value manually in the file ${SCRIPT_COMMANDS_FILE}"
 	    echo "${EVAL_CHECK}=\"${EVAL_DATA}\"" >> ${SCRIPT_COMMANDS_FILE}
 	else
 	    echo "${EVAL_CHECK}=\"${EVAL_DATA}\"" >> ${SCRIPT_COMMANDS_FILE}
 	fi
     done
-    echo "Exitting now...commands file created, please restart the script.."
+    echo "Exiting now...commands file created, please restart the script.."
     exit 1
 else
     source ${SCRIPT_COMMANDS_FILE}
@@ -153,14 +153,14 @@ else
 	if [ -z "${EVAL2_CHECK}" ]; then 
 	    echo "Error, ${EVAL2_CHECK} does not have a value"
 	    echo "Please put the command in the file ${SCRIPT_COMMANDS_FILE}"
-	    echo "Exitting now... "
+	    echo "Exiting now... "
 	    exit 1
 	fi
 
 	if [ ! -e "${!EVAL2_CHECK}" ]; then
 	    echo "Error, ${EVAL2_CHECK} is unset or set to the empty string"
 	    echo "Please correct the command in the file ${SCRIPT_COMMANDS_FILE}"
-	    echo "Exitting now... "
+	    echo "Exiting now... "
 	    exit 1 
 	fi
 
@@ -246,7 +246,7 @@ backup_file () {
 check_backup_file () {
     BACKUPDATE=$(${CMD_DATE} +%Y-%m-%d)	# ISO 8601 standard date.
     ${DEBUG} "Message: checking for previous backups of this day : $d"
-    # determin last use counter nr
+    # determine last use counter nr
     COUNTER=$(ls ${STOREDIR} | ${CMD_GREP} ${BACKUPDATE} | sort | ${CMD_GREP} $d | ${CMD_TAIL} -n1 | ${CMD_CUT} -d"-" -f5 | ${CMD_CUT} -d"." -f1)
     if [ -z "$COUNTER" ]; then 
 	COUNTER=0
