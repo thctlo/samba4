@@ -461,7 +461,7 @@ Before=remote-fs-pre.target
 Wants=remote-fs-pre.target
 
 EOF
-        fi
+    fi
 
 else
     error "No server of client variable input"
