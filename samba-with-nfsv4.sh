@@ -452,8 +452,8 @@ EOF
         service ssh restart
     fi
 
-	if [ ! -e /etc/systemd/system/nfs-common.service.d/remote-fs-pre.conf ]
-	echo "Fixing NFS mount on boot with systemd"
+    if [ ! -e /etc/systemd/system/nfs-common.service.d/remote-fs-pre.conf ] ; then
+        echo "Fixing NFS mount on boot with systemd"
 	mkdir -p /etc/systemd/system/nfs-common.service.d
 	cat << EOF > /etc/systemd/system/nfs-common.service.d/remote-fs-pre.conf
 [Unit]
@@ -461,7 +461,7 @@ Before=remote-fs-pre.target
 Wants=remote-fs-pre.target
 
 EOF
-	fi
+        fi
 
 else
     error "No server of client variable input"
