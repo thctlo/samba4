@@ -22,3 +22,4 @@ samba-setup-checkup.sh: (Work in progress), Goal, check you system for the corre
 
 samba-with-nfsv4.sh: the script i used to setup my domain members on my jessie server. Debian stretch is different.
 
+samba-dns-mass-add.sh: This script create hostnames between an asked range with A and PTR records. 
