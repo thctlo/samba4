@@ -1,9 +1,12 @@
 #!/bin/bash
 
 # This script does not modify anything, it shows the output of the SEPRIVILEGE members.
-# Version 1.0
-# Released : 30 aug 2017
-# Info: https://technet.microsoft.com/en-us/library/dn221963(v=ws.11).aspx 
+# Version 1.1
+# Released : 7 Sept 2017 
+# Info: https://technet.microsoft.com/en-us/library/dn579255(v=ws.11).aspx#BKMK_PrintOperators
+# 
+# Assigning Delegated Print Administrator and Printer Permission Settings in Windows Server 2008 R2 
+# https://technet.microsoft.com/en-us/library/ee524015(v=ws.10).aspx 
 
 
 # Last check known SePrivilege
