@@ -1,0 +1,14 @@
+# This folder gets a colletion of samba howtos which are tested on Debian
+==============
+
+The files.
+---------------- 
+stretch-base-1.txt           : Setup a minimal Debian server, with only ssh as base.
+			     : I use this on for every server setup. 
+
+stretch-base-1-checkup.txt   : Check you server before continue, 
+			       which is a must to make sure everyting is set ok, before other programmas get installed. 
+
+stretch-base-2-samba-minimal-ad.txt: Install Samba + Bind9_DLZ + ntp, a minimal setup.
+			     : You should be able to copy past where needed, while your read this file. 
+
