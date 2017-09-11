@@ -122,8 +122,8 @@ systemctl status ntp
 
 
 #KERBEROS: Configure krb5.conf 
-# Samba AD DC has krb5.conf in /var/lib/samba/private/  ( as of 4.7.x not anymore )
-# I will use the system default /etc/krb5.conf and leave the samba version alone. 
+# Samba AD DC has krb5.conf in /var/lib/samba/private/
+# I will use the system default /etc/krb5.conf and leave the samba version alone.
 
 # backup the old one.
 mv /etc/krb5.conf{,.org-debian}
@@ -228,10 +228,10 @@ getfacl /var/lib/samba/sysvol/ > /root/samba-backup/sysvol.acl
 tar cfz /root/samba-backup/sysvol.tar.gz --acls --xattrs /var/lib/samba/sysvol/
 
 # In above you see the line : 
-# A Kerberos configuration suitable for Samba 4 has been generated at /var/lib/samba/private/krb5.conf
-# ignore it, we use the /etc/krb5.conf, and as of samba 4.7.x this is the default. 
+# A Kerberos configuration suitable for Samba 4 has been generated at /var/lib/samba/private/krb5.conf 
+# You may ignore it, we use the /etc/krb5.conf.
 # Note!!  Do not symlink /var/lib/samba/private/krb5.conf to /etc/krb5.conf. 
-# This wil give problems in the future. 
+# This may create some problems in the future. (keep you eys on the 4.7 release notes when released) 
 
 #### Configure bind DNS for Samba AD BIND9_DLZ
 # https://wiki.samba.org/index.php/Setting_up_a_BIND_DNS_Server 
