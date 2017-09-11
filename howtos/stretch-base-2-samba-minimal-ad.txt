@@ -263,3 +263,78 @@ pam-auth-update
 # restart everything whats needed. 
 systemctl restart bind9 ntp samba-ad-dc
 
+# Setup SePrivileges, you need these to make sure you Administrators have the needed rights where needed. 
+# You need these to set your share and security rights from within Windows.
+########### Adding SePrivileges 
+# Here you have 2 choices, both work.
+# Personal i use : "BUILTIN\Administrators" this reflexs a windows server.
+# The samba wiki : "YOUR_NTDOM\Domain Admins" 
+# You choose, If you use the "BUILTIN\Adminsitrators", then also set in smb.conf: winbind expand groups = 2
+# the default is winbind expand groups = 0, i preffer a minimal of 2.
+# Both have Pro's and Cons, the higher the number, the slower you samba gets in resolving groups.
+# ps. you can set both also if your unsure, just remember, NTDOM\Domain Admins is member of BUILTIN\Administrators
+#
+# Enable one of these two.
+#SAMBA_NT_DOMAIN="BUILTIN\Administrators"
+#SAMBA_NT_DOMAIN="$(cat /etc/samba/smb.conf | grep workgroup | awk '{ print $NF}')\Domain Admins"
+
+# Your Administrator Password here
+# ! Note if you have a $ in it type it as \$
+SAMBA_NT_ADMIN_PASS="PutYourPassword_here"
+#
+# ! keep the sleep lines, if its going to fast it errors..
+#
+echo "${SAMBA_NT_ADMIN_PASS}"| kinit ${SAMBA_NT_ADMIN}
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeDiskOperatorPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeTakeOwnershipPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeBackupPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeRestorePrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeRemoteShutdownPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SePrintOperatorPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeAddUsersPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeDiskOperatorPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeSecurityPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeSystemtimePrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeShutdownPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeDebugPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeSystemEnvironmentPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeSystemProfilePrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeProfileSingleProcessPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeIncreaseBasePriorityPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeLoadDriverPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeCreatePagefilePrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeIncreaseQuotaPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeChangeNotifyPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeUndockPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeManageVolumePrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeImpersonatePrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeCreateGlobalPrivilege -UAdministrator
+sleep 5
+echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeEnableDelegationPrivilege -UAdministrator
+# and show if it worked.
+net rpc rights list "${SAMBA_NT_DOMAIN}" -U Administrator
+
