@@ -1,0 +1,16 @@
+Debian Stretch, the minimal things for a AD DC server. 
+( debian stretch samba 4.5.8/4.5.12 )
+
+Part 2, The Samba AD-DC checkups. 
+If you have correctly setup you samba server with Part 1. 
+Then all these commands now work without any problems.
+
+smbclient -L localhost -U%
+smbclient //localhost/netlogon -UAdministrator -c 'ls'
+
+host -t SRV _ldap._tcp.internal.example.com
+host -t SRV _kerberos._udp.internal.example.com
+host -t A server1ad.internal.example.com
+
+kinit administrator
+klist
