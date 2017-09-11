@@ -229,7 +229,7 @@ tar cfz /root/samba-backup/sysvol.tar.gz --acls --xattrs /var/lib/samba/sysvol/
 
 # In above you see the line : 
 # A Kerberos configuration suitable for Samba 4 has been generated at /var/lib/samba/private/krb5.conf 
-# You may ignore it, we use the /etc/krb5.conf.
+# You may ignore it, the /etc/krb5.conf file is used.
 # Note!!  Do not symlink /var/lib/samba/private/krb5.conf to /etc/krb5.conf. 
 # This may create some problems in the future. (keep you eys on the 4.7 release notes when released) 
 
@@ -251,7 +251,7 @@ sed -i '/listen-on-v6/a \ \ \ \ \ \ \ \ empty-zones-enable no;'  /etc/bind/named
 # change resolving to bind dns first. 
 sed -i '/\/\/ forwarders/a \ \ \ \ \ \ \ \ forwarders { 8.8.8.8; 8.8.4.4; };'  named.conf.options
 
-# change resolv.conf ( we keep the second google dns as backup of dns fails )
+# change resolv.conf ( we keep the second google dns as backup if bind fails to startup and you need internet. )
 sed -i.org-debian "s/nameserver 8.8.8.8/nameserver $(hostname -i)/g" resolv.conf
 
 # nsswitch.conf changes if you need to be able to login with ssh. ( winbind based logins )
