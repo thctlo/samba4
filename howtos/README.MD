@@ -1,4 +1,4 @@
-# This folder gets a colletion of samba howtos which are tested on Debian
+# This folder gets a collection of samba howtos which are tested on Debian.
 ==============
 
 The files. 
