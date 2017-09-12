@@ -32,9 +32,11 @@ Time server
 
 # python-gpgme is added when you install a samba 4.6.x+ 
 
+# smbclient is added also for the tests later on.
+
 # Now all in one go. 
 apt-get install samba winbind acl bind9 libnss-winbind libpam-winbind \
- ntp krb5-user bind9utils ldb-tools -y
+ ntp krb5-user bind9utils ldb-tools smbclient -y
 
 #### For the questions .. 
 # Configuring Kerberos Authentication 
@@ -249,14 +251,14 @@ sed -i '/listen-on-v6/a \ \ \ \ \ \ \ \ tkey-gssapi-keytab \"\/var\/lib\/samba\/
 sed -i '/listen-on-v6/a \ \ \ \ \ \ \ \ \/\/ https:\/\/wiki.samba.org\/index.php\/Dns-backend_bind'  /etc/bind/named.conf.options
 sed -i '/listen-on-v6/a \ \ \ \ \ \ \ \ empty-zones-enable no;'  /etc/bind/named.conf.options
 # change resolving to bind dns first. 
-sed -i '/\/\/ forwarders/a \ \ \ \ \ \ \ \ forwarders { 8.8.8.8; 8.8.4.4; };'  named.conf.options
+sed -i '/\/\/ forwarders/a \ \ \ \ \ \ \ \ forwarders { 8.8.8.8; 8.8.4.4; };'  /etc/bind/named.conf.options
 
 # change resolv.conf ( we keep the second google dns as backup if bind fails to startup and you need internet. )
 sed -i.org-debian "s/nameserver 8.8.8.8/nameserver $(hostname -i)/g" resolv.conf
 
 # nsswitch.conf changes if you need to be able to login with ssh. ( winbind based logins )
-sed -i 's/passwd:         compat/passwd:         compat winbind/g' nsswitch.conf
-sed -i 's/group:          compat/group:          compat winbind/g' nsswitch.conf
+sed -i 's/passwd:         compat/passwd:         compat winbind/g' /etc/nsswitch.conf
+sed -i 's/group:          compat/group:          compat winbind/g' /etc/nsswitch.conf
 and if this is done run : 
 pam-auth-update
 
@@ -284,7 +286,7 @@ SAMBA_NT_ADMIN_PASS="PutYourPassword_here"
 #
 # ! keep the sleep lines, if its going to fast it errors..
 #
-echo "${SAMBA_NT_ADMIN_PASS}"| kinit ${SAMBA_NT_ADMIN}
+echo "${SAMBA_NT_ADMIN_PASS}"| kinit Administrator
 sleep 5
 echo "${SAMBA_NT_ADMIN_PASS}"| net rpc rights grant "${SAMBA_NT_DOMAIN}" SeDiskOperatorPrivilege -UAdministrator
 sleep 5
