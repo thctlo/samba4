@@ -24,6 +24,9 @@ samba-with-nfsv4.sh: the script i used to setup my domain members on my jessie s
 
 samba-dns-mass-add.sh: This script create hostnames between an asked range with A and PTR records.
 
-samba-collect-debug-info.sh: This script collects some debugging info to a file.
+samba-collect-debug-info.sh: This script collects some debugging info to a file.  
+Please note, this script is tested only on debian, it will not work correctly yet for other OS and/or source installations.
+
+
 
 
