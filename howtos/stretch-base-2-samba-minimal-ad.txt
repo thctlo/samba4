@@ -75,30 +75,39 @@ sed -i 's/pool 0.debian.pool.ntp.org iburst/#pool 0.debian.pool.ntp.org iburst/g
 sed -i 's/pool 1.debian.pool.ntp.org iburst/#pool 1.debian.pool.ntp.org iburst/g' /etc/ntp.conf
 sed -i 's/pool 2.debian.pool.ntp.org iburst/#pool 2.debian.pool.ntp.org iburst/g' /etc/ntp.conf
 sed -i 's/pool 3.debian.pool.ntp.org iburst/#pool 3.debian.pool.ntp.org iburst/g' /etc/ntp.conf
+
 # Enable a good NTP (stratum 1) server. 
+# Found here : http://support.ntp.org/bin/view/Servers/StratumOneTimeServers 
+# change ntp1.nl.net to a close ntp source ping/trace them and take the closed.
 sed -i 's/#server ntp.your-provider.example/server ntp1.nl.net/g' /etc/ntp.conf
 
 cat << EOF >> /etc/ntp.conf
 #
-# Optional, define which interface ntp could/should use
-interface listen lo
-interface listen eth0
+# Optional, define which interface ntp could/should use.
+# Since SystemD, we dont have Predictable interface names anymore. 
+# Info: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
+# run : ip a and check you interface name and change it. ( default = eth0 )
+# Enable/disable what you want, its here as example for you.
+#interface listen lo
+#interface listen eth0
 #interface ignore wildcard
-interface ignore ipv6
+#interface ignore ipv6
 #
 EOF
 systemctl restart ntp 
 
-# create the ntp_signd folder
+# create the ntp_signd folder, if not exist.
 if [ ! -d /var/lib/samba/ntp_signd/ ]; then 
     mkdir -p /var/lib/samba/ntp_signd/
     chmod 750 /var/lib/samba/ntp_signd
     chown root:ntp /var/lib/samba/ntp_signd
 fi
+# check the group name
 if [ "$(stat -c "%G" /var/lib/samba/ntp_signd/)" != "ntp" ]; then
     echo "Error incorrect group detected on /var/lib/samba/ntp_signd/, correcting now."
     chgrp ntp /var/lib/samba/ntp_signd
 fi
+# check owner/group 
 if [ "$(stat -c "%a" /var/lib/samba/ntp_signd/)" -ne 750 ]; then 
     echo "Error incorrect group rights detected on /var/lib/samba/ntp_signd/, correcting now."
     chmod 750 /var/lib/samba/ntp_signd
@@ -110,12 +119,14 @@ fi
 # add the folder location to ntp.conf
 cat << EOF >> /etc/ntp.conf
 #
-######  Needed for Samba 4  #######  in the restrict -4 or -6 added mssntp at the end
+######  Needed for Samba 4  ######
+# extra info, in the restrict -4 or -6 added mssntp. ( already done for you )
 # Location of the samba ntp_signed directory
 ntpsigndsocket /var/lib/samba/ntp_signd
 #
 EOF
 
+# Note, if Jessie fails, remove the word "limited" from these lines.
 sed -i 's/restrict -4 default kod notrap nomodify nopeer noquery limited/restrict -4 default kod notrap nomodify nopeer noquery limited mssntp/g' /etc/ntp.conf
 sed -i 's/restrict -6 default kod notrap nomodify nopeer noquery limited/restrict -6 default kod notrap nomodify nopeer noquery limited mssntp/g' /etc/ntp.conf
 systemctl restart ntp
@@ -165,8 +176,8 @@ rm /var/cache/samba/*
 rm /var/lib/samba/*.tdb
 
 # https://wiki.samba.org/index.php/Setting_up_Samba_as_an_Active_Directory_Domain_Controller 
-# read and try to understand why i setup with RFC2307 in AD ( members get idmap backend AD for all FILESERVERS ) 
-# I'll explain this later on.
+# Read and try to understand why i setup with RFC2307 in AD ( members get idmap backend AD for all FILESERVERS ) 
+# I'll explain this later on in the member setup.
 
 # With internal DNS
 #samba-tool domain provision --server-role=dc --use-rfc2307 --dns-backend=SAMBA_INTERNAL --realm=SAMDOM.EXAMPLE.COM --domain=SAMDOM
@@ -174,8 +185,12 @@ rm /var/lib/samba/*.tdb
 # With BIND9_DLZ
 # samba-tool domain provision --server-role=dc --use-rfc2307 --dns-backend=BIND9_DLZ --realm=INTERNAL.EXAMPLE.COM --domain=INTERNAL
 
-#or, change the domain name, it does not have to be INTERNAL, so i keep this as guidance. 
+#or, change the domain name, it does not have to be INTERNAL, so i keep this as guidance.
 samba-tool domain provision --server-role=dc --use-rfc2307 --dns-backend=BIND9_DLZ --realm=INTERNAL.EXAMPLE.COM --domain=SAMBADOM
+# Few pointers whats in smb.conf 
+# workgroup = --domain=SAMBADOM
+# realm = --realm=INTERNAL.EXAMPLE.COM
+# netbiosname = hostname -s ( in caps, and restristed to 15 characters.) 
 
 Results in : 
 Administrator password will be set randomly!
