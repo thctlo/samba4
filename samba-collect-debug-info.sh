@@ -29,6 +29,11 @@ fi
 ############# Code
 echo "Please wait, collecting debug info."
 
+if [ ! -e /etc/debian_version ]; then 
+    echo "Sorry, this script was tested on Debian only"
+    exit 1 
+fi
+
 echo "Collected config  --- $(date +%Y-%m-%d-%H:%m) -----------" > $LOGFILE
 echo " " >> $LOGFILE
 Check_file_exists /etc/os-release
