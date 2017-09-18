@@ -14,3 +14,12 @@ host -t A server1ad.internal.example.com
 
 kinit administrator
 klist
+
+Some NTP tests.
+Run on linux : ntpq -qq Or ntpq -pn 127.0.0.1 or an other option is : apt-get install ntpstat and run run : ntpstat
+If you see errors, first thing you should check if the following. 
+On which interfaces and ipnumbers is ntp running: netstat -taupn|grep udp|grep ntp
+And if you use the inteface lines, ( one or more ) interface listen ....  and sync fails check if ntp is trying on ipv6.
+This command will tell you more about it: strace ntpq -pn ::1|& grep -i conn
+Then first disable the inteface lines and try again. 
+
