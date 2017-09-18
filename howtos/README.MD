@@ -1,5 +1,5 @@
-# This folder gets a collection of samba howtos.
-These are tested on Debian Stretch, but should work on Jessie to.  
+# This folder gets a collection of samba howtos. 
+These are tested on Debian Stretch, but should work on Jessie to. 
 ==============  
   
 The files.  
