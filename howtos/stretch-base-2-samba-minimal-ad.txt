@@ -88,6 +88,10 @@ cat << EOF >> /etc/ntp.conf
 # Info: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
 # run : ip a and check you interface name and change it. ( default = eth0 )
 # Enable/disable what you want, its here as example for you.
+# Notice: if you run : ntpq -qq or ntpstat  ( apt-get install ntpstat )
+# and you keep getting unsync messages, try disable-ing all the interface lines first and restart ntp
+# If ntp tries to connect to ipv6 and its disabled, it wont sync. 
+# test: systemctl stop ntp && strace ntpq -pn ::1|& grep -i conn
 #interface listen lo
 #interface listen eth0
 #interface ignore wildcard
