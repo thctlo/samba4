@@ -22,5 +22,5 @@ The files and setup order:
  * *stretch-base-2.1-samba-minimal-ad-checks.txt* : a few minimal check for the AD DC setup.  
  * *stretch-base-3.1-samba-member-debian-install.txt* : This is basicly a copy of the stretch-base-1.0.txt.  
     Except, this one uses the first installed Samba AD DC server as primary NTP and DNS server.  
- * *stretch-base-3.1-samba-member-debian-install-checkes.txt* : TODO
+ * *stretch-base-3.2-samba-member-debian-install-checkes.txt* : TODO
  * *stretch-base-3.3-samba-member-fileserver-rights-example.txt* : This start for some rights explained.  
