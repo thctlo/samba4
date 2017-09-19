@@ -1,8 +1,12 @@
-Debian Stretch, the minimal things for a MEMBER server. 
-( debian stretch samba 4.5.8/4.5.12 )
 
-Part 2 The "Samba MEMBER" (FILE-SERVER) server setup, what about the share and security rights. 
-By example. ( This is a Work in Progress) 
+Part 3.3, The "Samba MEMBER" (FILE-SERVER) server setup, what about the share and folder security.
+
+Debian Stretch, the minimal things for a MEMBER server. 
+( Tested on Debian Stretch Samba 4.5.8 )
+
+By example. (This is a Work in Progress) 
+! Things may change here, im testing some different setups.
+
 
 ######## MEMBER SHARE DEFINITIONS ################
 # READ: https://www.samba.org/samba/docs/man/manpages-3/vfs_acl_xattr.8.html
@@ -30,15 +34,18 @@ By example. ( This is a Work in Progress)
 # 1 everyone ( everyone can enter this folder ) 
 # 
 # If you set your base rights in a subfolder, i suggest, 3770
-# 3 Creator (owner and group) This is where "Domain Users" for all users comes in. 
+# 3 Creator Group, this is where "Domain Users" for all users comes in. 
 # 7 (root)
 # 7 (BUILTIN\Administrators
 # 0 You dont want anyone enterint this folder. 
 # Now root/Administrator creates a new folder in /home/samba/data/group1
+# Add a windows group (with or without uid) to /home/samba/data/group1 ( example: group name=data_group1 ) give it all but full controll.
+# You dont want users to modify your acls dont you, if you have such users, create a new group, data_group1_management
+# and give that one full control.
 #
 #    ! So only Administrator (root) can create/assign rights to new folders in the samba$ ( a administrative share. )
 # Now, login as SAMBADOM\Administrator with a domain joined PC, and setup your rights and folders in /home/samba
-# ( tip, drive map \\$(hostname -f)\samba$ )
+# ( tip, drive map \\hostname.internal.example.com\samba$ )
 #
 [samba$]
     # Used for Administrative things only.
@@ -59,12 +66,10 @@ By example. ( This is a Work in Progress)
     path = /home/samba/users
     read only = no
     acl_xattr:ignore system acl = yes
-#    veto files = /*.exe/*.com/*.dll/*.bat/*.vbs/*.tmp/*.mp3/*.avi/*.mp4/*.wmv/*.wma/*.mov/*.mpg/*.mpeg
 
 [data]
     # data share for domain/company
     browseable = yes
     path = /home/samba/data
     read only = no
-
 
