@@ -1,3 +1,6 @@
+
+Part 1.0 The basic Debian Stretch Install.
+
 Debian Stretch Install Basics. 
 - Advanced Options
 - Expert install
