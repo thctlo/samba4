@@ -1,7 +1,6 @@
-Debian Stretch, the minimal things for a MEMBER server. 
-( debian stretch samba 4.5.8/4.5.12 )
 
-Part 1 The "Samba MEMBER" (FILE-SERVER) server setup.
+Part 3.2 The "Samba MEMBER" (FILE-SERVER) server setup.
+( Tested on Debian Stretch, samba 4.5.8 )
 
 Now for an Samba member server, we need the following. 
 - Correct hostname and resolving ( see part-1-checkup )
