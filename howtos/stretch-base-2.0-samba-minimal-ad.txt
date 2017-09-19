@@ -1,7 +1,8 @@
-Debian Stretch, the minimal things for a AD DC server. 
-( debian stretch samba 4.5.8/4.5.12 )
 
-Part 1 ( The "Samba AD DC" ONLY server setup with BIND9_DLZ)
+Part 2.0 The "Samba AD DC" ONLY server setup with BIND9_DLZ
+
+Debian Stretch, the minimal things for a AD DC server. 
+( Tested on debian stretch samba 4.5.8 )
 
 Now for an Samba AD DC server, we need the following. 
 - Correct hostname and resolving ( see part-1-checkup )
