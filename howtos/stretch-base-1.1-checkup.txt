@@ -1,3 +1,6 @@
+
+Part 1.2 Debian Stretch Checks.
+
 - Debian Stretch Base install - Checkup
     Login with : linuxadmin
 	(linuxadmin is already added to sudo, so change to root with sudo)
