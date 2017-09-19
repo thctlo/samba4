@@ -1,0 +1,393 @@
+Debian Stretch, the minimal things for a MEMBER server. 
+( debian stretch samba 4.5.8/4.5.12 )
+
+Part 1 The "Samba MEMBER" (FILE-SERVER) server setup.
+
+Now for an Samba member server, we need the following. 
+- Correct hostname and resolving ( see part-1-checkup )
+- Correct time for the server and network 
+- Internet
+
+Now we install the following, and this setups the following. 
+
+Samba (member) 
+Time server (client)
+
+# the needed packages
+#apt-get install samba winbind   	# For samba with Samba internal DNS
+# Or
+# apt-get install samba winbind bind9 # For samba with Bind BIND9_DLZ DNS 
+#
+# I noticed attr is selected but not acl for the install, 
+# so to make sure these are installed. 
+#apt-get install attr acl 
+#
+# if you want to ssh and/or have uid/gid resolving 
+# ( adviced is yes, pleas install this. )
+#apt-get install libnss-winbind libpam-winbind
+#
+# tools  ( optional, but very handy to have them installed )
+#apt-get install bind9utils ldb-tools 
+
+# python-gpgme is added when you install a samba 4.6.x+ 
+
+# smbclient is added also for the tests later on.
+
+# Now all in one go. 
+apt-get install samba winbind acl libnss-winbind libpam-winbind \
+ ntp krb5-user bind9utils ldb-tools smbclient -y
+
+#### For the questions .. 
+# Configuring Kerberos Authentication 
+### You kan keep the default ( DNS domain in caps ). (INTERNAL.EXAMPLE.COM)
+### Just keep in mind DNS domain != REALM 
+# Configuring Kerberos Authentication
+### Empty is ok, just hit enter
+# Configuring Kerberos Authentication
+### Empty is ok, just hit enter
+
+##############################################################################
+Now its getting interesting and first we disble the things we dont need. 
+
+lets stop all services first we are going to configure. 
+systemctl stop samba smbd nmbd winbind samba-ad-dc ntp
+
+# See the status of the services: 
+systemctl status samba smbd nmbd winbind samba-ad-dc ntp
+
+# disable the "AD DC server startups"
+systemctl mask samba samba-ad-dc
+systemctl disable  samba samba-ad-dc
+
+# set samba-ad-dc ready to start, but DONT start it yet. 
+systemctl unmask smbd nmbd winbind
+systemctl enable smbd nmbd winbind
+systemctl stop smbd nmbd winbind
+
+### NTP Begin ( Part 1/2 )
+cp /etc/ntp.conf{,.org-debian}
+
+# Now first setup the time server and make sure time is correct,
+# before we do something with samba.
+#
+# Disable the pool servers. 
+sed -i 's/pool 0.debian.pool.ntp.org iburst/#pool 0.debian.pool.ntp.org iburst/g' /etc/ntp.conf
+sed -i 's/pool 1.debian.pool.ntp.org iburst/#pool 1.debian.pool.ntp.org iburst/g' /etc/ntp.conf
+sed -i 's/pool 2.debian.pool.ntp.org iburst/#pool 2.debian.pool.ntp.org iburst/g' /etc/ntp.conf
+sed -i 's/pool 3.debian.pool.ntp.org iburst/#pool 3.debian.pool.ntp.org iburst/g' /etc/ntp.conf
+
+# For the Member server we point to the DC (1 or 2 or 3).
+# change YOUR_DC_NAME_OR_IP to the hostname of ip adres of your DC.
+sed -i 's/#server ntp.your-provider.example/server YOUR_DC_NAME_OR_IP/g' /etc/ntp.conf
+
+cat << EOF >> /etc/ntp.conf
+#
+# Optional, define which interface ntp could/should use.
+# Since SystemD, we dont have Predictable interface names anymore. 
+# Info: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
+# run : ip a and check you interface name and change it. ( default = eth0 )
+# Enable/disable what you want, its here as example for you.
+# Notice: if you run : ntpq -p or ntpstat  ( apt-get install ntpstat )
+# and you keep getting unsync messages, try disable-ing all the interface lines first and restart ntp
+# If ntp tries to connect to ipv6 and its disabled, it wont sync. 
+# test: systemctl stop ntp && strace ntpq -pn ::1|& grep -i conn
+#interface listen lo
+#interface listen eth0
+#interface ignore wildcard
+#interface ignore ipv6
+#
+EOF
+systemctl restart ntp 
+# and see if everything is running 
+systemctl status ntp 
+
+### NTP End
+
+
+# KERBEROS: Configure krb5.conf 
+# Samba MEMBER krb5.conf in /etc/krb5.conf
+
+# backup the old one.
+mv /etc/krb5.conf{,.org-debian}
+
+# Note!!  Do not symlink /var/lib/samba/private/krb5.conf to /etc/krb5.conf. 
+# This may create some problems in the future. (keep you eys on the 4.7 release notes when released) 
+
+cat << EOF >> /etc/krb5.conf
+[libdefaults]
+    default_realm = INTERNAL.EXAMPLE.COM
+    dns_lookup_kdc = true
+    dns_lookup_realm = false
+    forwardable = true
+    proxiable = true
+;    ticket_lifetime = 24h
+;    renew_lifetime = 7d
+;    ccache_type = 4
+;
+; Enable this one if you have a tight setup where only the user can enter the user home dir.
+; You might need it with cifs mounts, nfs mounts
+;    ignore_k5login = true
+
+
+; A note: This is not used for nfs4 but cifs uses it.
+; for Windows 2003
+;    default_tgs_enctypes = rc4-hmac des-cbc-crc des-cbc-md5
+;    default_tkt_enctypes = rc4-hmac des-cbc-crc des-cbc-md5
+;    permitted_enctypes = rc4-hmac des-cbc-crc des-cbc-md5
+;
+; for Windows 2008 with AES
+    default_tgs_enctypes =  aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96 rc4-hmac des-cbc-crc des-cbc-md5
+    default_tkt_enctypes = aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96 rc4-hmac des-cbc-crc des-cbc-md5
+    permitted_enctypes = aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96 rc4-hmac des-cbc-crc des-cbc-md5
+
+EOF
+
+
+# Samba Member setup.
+# First, backup the original config.
+mv /etc/samba/smb.conf{,.org-debian}
+
+# Cleanup some old things from the samba install. 
+rm /var/cache/samba/printing/*
+rm /var/cache/samba/*
+rm /var/lib/samba/*.tdb
+rm /var/lib/samba/private/*.tdb
+
+
+# https://wiki.samba.org/index.php/Setting_up_Samba_as_a_Domain_Member
+# Read and try to understand why i setup with RFC2307 in AD ( members get idmap backend AD for all FILESERVERS ).
+cat << EOF >> /etc/samba/smb.conf
+# https://wiki.samba.org/index.php/Setting_up_Samba_as_a_Domain_Member
+#
+log level = 0
+
+# netbios name = By default this is "hostname -s" but in caps.
+realm = INTERNAL.EXAMPLE.COM
+workgroup = SAMBADOM
+security = ADS
+
+# set master browser for the network.
+# preffered + domain master = yes = guarantee master browser ( man smb.conf )
+# ! There can only be ONE master browser.
+preferred master = no
+domain master = no
+
+dedicated keytab file = /etc/krb5.keytab
+kerberos method = secrets and keytab
+
+## map id's outside to domain to tdb files.
+idmap config * : backend = tdb
+idmap config * : range = 3000-7000
+
+## map ids from the domain  the range may not overlap !
+idmap config SAMBADOM : backend = ad
+idmap config SAMBADOM : schema_mode = rfc2307
+idmap config SAMBADOM : range = 10000-999999
+# idmap config SAMBADOM : unix_nss_info = yes # Only in Samba 4.6+
+
+# Renew the kerberos tickets
+winbind refresh tickets = yes
+
+# Enable offline logins
+winbind offline logon = yes
+
+# User uid/Gid from AD. (rfc2307)
+winbind nss info = rfc2307
+
+# With default domain, wbinfo -u, yes = username, no is SAMBADOM\username
+winbind use default domain = yes
+winbind trusted domains only = no
+
+# Keep no in production, set yes when debugging, this slows down your samba.
+winbind enum users  = no
+winbind enum groups = no
+
+# Check depth of nested groups, ! slows down you samba, if to much groups depth
+# Samba default is 0, i suggest a minimal of 2 in this setup, advices is 4.
+winbind expand groups = 4
+
+# User Administrator workaround, without it you are unable to set privileges
+# !Note: When using the AD ID mapping back end, do not set the uidNumber attribute for the domain administrator account. 
+# If the account has the attribute set, the value overrides the local UID 0 of the root user and thus the mapping fails.
+username map = /etc/samba/samba_usermapping
+
+# disable usershares creating, when set empty no error log messages.
+usershare path =
+
+# Disable printing completely
+load printers = no
+printing = bsd
+printcap name = /dev/null
+disable spoolss = yes
+
+# For Windows ACL support on member file server, enabled globaly, OBLIGATED
+# For a mixed setup of rights, put this per share!
+vfs objects = acl_xattr
+map acl inherit = yes
+store dos attributes = yes
+
+# Share Setting Globally
+veto files = /.bash_logout/.bash_profile/.bash_history/.bashrc/
+hide unreadable = yes
+
+######## SHARE DEFINITIONS ################
+##
+[samba$]
+    # Used for Administrative things only.
+    browseable = yes
+    path = /home/samba
+    read only = no
+
+[profiles]
+    # user profiles folder
+    browseable = yes
+    path = /home/samba/profiles
+    read only = no
+    acl_xattr:ignore system acl = yes
+
+[users]
+    # user homedirs
+    browseable = yes
+    path = /home/samba/users
+    read only = no
+    acl_xattr:ignore system acl = yes
+
+[data]
+    # data share for domain/company
+    browseable = yes
+    path = /home/samba/data
+    read only = no
+
+EOF
+
+# Create these share folders
+mkdir -p /home/samba/{profiles,users,data}
+chmod 3771 /home/samba
+chmod 1777 /home/samba/profiles
+
+# ! Note, kerberos needs access in a users home to check 
+chmod 1770 /home/samba/users
+# on the data folder we want creator owner and group. The group maps to "domain users"
+chmod 3770 /home/samba/data
+# as of this point dont do anything on linux, finish the install and use windows to setup acl.
+
+# To map the domain administrator to the local root account: 
+cat << EOF > /etc/samba/samba_usermapping
+!root = SAMBADOM\Administrator SAMBADOM\administrator
+EOF
+
+# Resolving
+# change resolv.conf ( we keep the second google dns as backup if bind fails to startup and you need internet. )
+sed -i "s/nameserver 8.8.8.8/nameserver 192.168.249.30/g" /etc/resolv.conf
+
+# Here samba JOIN the domain.
+# get a kerberos ticket. (dont destroy it after the join)
+kinit Administrator
+# and join the domain
+net ads join -k
+
+
+# nsswitch.conf changes if you need to be able to login with ssh. ( winbind based logins )
+sed -i 's/passwd:         compat/passwd:         compat winbind/g' /etc/nsswitch.conf
+sed -i 's/group:          compat/group:          compat winbind/g' /etc/nsswitch.conf
+and if this is done run : 
+pam-auth-update
+
+# Kerberos ssh logins. the basics.. 
+# If you need to be able to login with ssh. run the following. 
+apt-get install ssh-krb5
+# this enables kerberos logins. 
+# ! Note, by default on debian any user with uid 1000+ is able to login. 
+
+# restart everything whats needed. 
+systemctl restart ntp smbd nmbd winbind
+
+# check with wbinfo -u && wbinfo -g, you should see some usernames and groups. 
+# and No, getent passwd administrator wil not and should not work!
+# in AD setup DONT assign an uid to Administrator. 
+
+# Setup SePrivileges, you need these to make sure you Administrators have the needed rights where needed. 
+# You need these to set your share and security rights from within Windows.
+########### Adding SePrivileges 
+# Here you have 2 choices, both work.
+# Personal i use : "BUILTIN\Administrators" this reflexs a windows server.
+# The samba wiki : "YOUR_NTDOM\Domain Admins" 
+# You choose, If you use the "BUILTIN\Adminsitrators", then also set in smb.conf: winbind expand groups = 2
+# the default is winbind expand groups = 0, i preffer a minimal of 2.
+# Both have Pro's and Cons, the higher the number, the slower you samba gets in resolving groups.
+# ps. you can set both also if your unsure, just remember, NTDOM\Domain Admins is member of BUILTIN\Administrators
+#
+# You can only enable one of these two at once, if you want both groups, run it, change it and run it again.
+SAMBA_DC_ADMIN_GROUP_CHOICE="BUILTIN\Administrators"
+#SAMBA_DC_ADMIN_GROUP_CHOICE="$(cat /etc/samba/smb.conf | grep workgroup | awk '{ print $NF}')\Domain Admins"
+
+# Your Administrator Password here
+# ! Note if you have a $ in it type it as \$
+SAMBA_NT_ADMIN_PASS="PutYourPassword_here"
+
+#
+# ! keep the sleep lines, if its going to fast it errors..
+# we re-use the kerberos ticket.
+#
+if [ "$(net rpc rights list "${SAMBA_DC_ADMIN_GROUP_CHOICE}" -k -S $(hostname -f) | wc -l) -le 2 ]; then 
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeDiskOperatorPrivilege -k -S $(hostname -f)
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeTakeOwnershipPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeBackupPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeRestorePrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeRemoteShutdownPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SePrintOperatorPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeAddUsersPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeDiskOperatorPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeSecurityPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeSystemtimePrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeShutdownPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeDebugPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeSystemEnvironmentPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeSystemProfilePrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeProfileSingleProcessPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeIncreaseBasePriorityPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeLoadDriverPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeCreatePagefilePrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeIncreaseQuotaPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeChangeNotifyPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeUndockPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeManageVolumePrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeImpersonatePrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeCreateGlobalPrivilege -UAdministrator
+sleep 5
+net rpc rights grant "${SAMBA_DC_ADMIN_GROUP_CHOICE}" SeEnableDelegationPrivilege -UAdministrator
+# and show if it worked.
+net rpc rights list "${SAMBA_DC_ADMIN_GROUP_CHOICE}" -U Administrator
+else
+    echo "SePrivileges already done for ${SAMBA_DC_ADMIN_GROUP_CHOICE}"
+fi
+
+# now destroy the ticket.
+kdestory
+# and reboot the server.
+reboot
+
+# when done, login as linuxadmin and go check all you logs. 
