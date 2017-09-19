@@ -1,0 +1,138 @@
+Debian Stretch Install Basics. 
+- Advanced Options
+- Expert install
+    - Language
+	- Language :  English                -  English           
+	- Country, territory or area: other -> Europe -> Netherlands 
+	- Country to base default locale settings on:   United States        -  en_US.UTF-8
+	- Additional locales: ( not really needed, its easy to add later on when needed. )
+
+    - Access software for blind person.. skip
+    
+    - Configure keyboard
+	- American/English
+	
+    - Detect and mount CDROM
+	- usb-storage, ( keep default )
+	
+    - Load installer components from CDROM
+	- ( i switch to ssh later on, so i enable network-console )
+    
+    - Detect network hardware  
+    
+    - Configure the network
+	- Auto-configure networking
+	    ! Yes, you can install with automatic, but then you need to correct other
+	    setting in the system so choose NO and setup a static ipnumber. 
+	server : 192.168.249.30/24 = 192.168.249.30/255.255.255.0
+	Gateway : 192.168.249.1
+	Nameserver: 8.8.8.8 8.8.4.4
+	(the other AD DC DNS Nameservers: 192.168.249.212 192.168.249.211)
+	Since this is a test server and it gets its own dns, set internet dns ipnumbers
+	
+	Check the info, and if ok, hit enter.
+	
+    - Configure the Hostname
+	- Hostname 	: server1ad
+	- Domainname: internal.example.com
+	    NO .local, NO .lan
+	    ( results in server1ad.internal.example.com as FQDN )
+    - Continue installation remotely using SSH.
+	type your pass. ( user name is: installer )
+	( login with ssh, and choose : Start installer (expert mode) )
+    
+    - Set up users and passwords
+	- Enable shadow passwords? Yes
+	- Allow login as root?  No     ( i say No No No... NO ...... NO  ) 
+	- Fullname new user: (What you want.) Linux Admin
+	- Username for your account: linuxadmin
+	- Password for the new user: (louis default)
+    - Configure the clock
+	- Set the clock using NTP? Yes
+	    - NTP server to use:  ( choose stratum 1 server, ntp1.nl.net )
+	    - Timezone : Europe/Amsterdam   ( if you dont see you country/region go back to language, and set that correct. )
+    - Detect disks
+	- Partition disks
+	    Manual (started, choose Guided - user entire disk. )
+		Select disk, Create Empty (msdos) table
+		Select partition, Create new partition... (Stop and think.) 
+		Now, here the minimal i advice is 
+		/   ( a samba AD DC, needed only 1.5GB for the complete OS install, set it to 8Gb as minimal )
+		/var/log ( if you get a log run, it can fillup you partion and damage a samba database, 1Gb-2Gb more the ok )
+		( this example shows 6GB for / and 1Gb /var/log)
+		    New ( 6GB, Primary, beginning )
+			Use as 			: ext4  
+			mount point		: /
+			Mount option	: (SSD, select discard) ( other keep default )
+			Label			: OS_/
+			Reserved blocks	: 5%    
+			Typical usage	: standard    ( partitions with only large files ( iso/mkv/mov ) choose largefile4 ( adviced 500Mb+ files )
+			Bootable flag	: on
+		    Done setting up the partition
+		    
+		    New ( 1GB, Logical, beginning )
+			Use as 			: ext4  
+			mount point		: (Enter Manualy)  /var/log
+			Mount option	: (SSD, select discard) ( other optional, noatime )
+			Label			: OS_/var/log
+			Reserved blocks	: 5%    
+			Typical usage	: standard    ( partitions with only large files ( iso/mkv/mov ) choose largefile4 ( adviced 500Mb+ files )
+			Bootable flag	: on
+		    Done setting up the partition
+		    
+		    New ( 1,6GB, Logical, beginning )
+			 Use as:         swap area 
+		    Done setting up the partition
+		Finish partitioning and write changes to disk ..
+		
+    -  Install the base system
+	    Kernel to install:       		
+                linux-image-4.9.0-3-amd64
+		linux-image-amd64
+		
+		If you choose linux-image-4.9.0-3-amd64, you stay at 4.9.0 from stable. 
+		If you choose linux-image-amd64, you keep following latest stable ( or backports)
+		Personaly i choose linux-image-4.9.0-3-amd64, since i always keep the kernel where the system was installed with. 
+		a "save bet" on trying a older kernel if you hit problems on the road.. 
+		
+	    Drivers to include in the initrd: 
+		Now, generic is the best option
+		if you know you are never going to move the server to other hardware, then targeted is an option. 
+		( i did choose targeted since its a VM i use, and it save me some time. )
+		
+    - Configure the package manager 
+	Scan another CD or DVD? No
+	Use a network mirror? Yes
+	Protocol for file downloads: http ( https is better, but easy to add later on. )
+	Debian archive mirror country: Netherlands  
+	Debian archive mirror: deb.debian.org or ftp.nl.debian.org
+	 ( read : http://deb.debian.org for more info about this new host. )
+	HTTP proxy information (blank for none):
+	Use non-free software? Yes  ( you might need (linux) firmware packages)
+	Enable source repositories in APT? No
+	Services to use: 	[*] security updates (from security.debian.org)
+			    [*] release updates
+			    [ ] backported software                                                          
+	Now i did not enable backported software, we only enabled it, then its really really needed. 
+	
+    - Select and install software                                     
+	 Participate in the package usage survey? .. what the .. , why not..  it helps debian. you choose.
+	 ( and : This choice can be later modified by running "dpkg-reconfigure popularity-contest".)
+    
+    - Software selection
+	SSH server
+	standard system utilities
+	
+	All other turn off, yes, even if you want apache or a print server, first AD DC setup. ;-)
+	
+    - Install the GRUB boot loader on a hard disk
+	 Install the GRUB boot loader to the master boot record?   Yes
+	 Device for boot loader installation: ( for me /dev/xvda ) you /dev/sda probely. 
+	 Force GRUB installation to the EFI removable media path?  No, ( i suggest, you keep the default )
+    
+    - Finish the installation  
+	Is the system clock set to UTC? ( for me Yes ) you, i suggest, keep the default.
+	
+    - Installation complete
+	Great, Continue, and you server reboots. 
+
