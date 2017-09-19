@@ -1,7 +1,7 @@
 This folder gets a collection of samba howtos.
 ----------------------------------------------
 
-These are tested on Debian Stretch, but should work on Jessie to.
+These are tested on Debian Stretch, but should work on Jessie to.  
 The howto collection wil be extended with the following things.  
 1. Base server install.  
 2. Samba AD DC.  
