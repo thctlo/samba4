@@ -1,0 +1,70 @@
+Debian Stretch, the minimal things for a MEMBER server. 
+( debian stretch samba 4.5.8/4.5.12 )
+
+Part 2 The "Samba MEMBER" (FILE-SERVER) server setup, what about the share and security rights. 
+By example. ( This is a Work in Progress) 
+
+######## MEMBER SHARE DEFINITIONS ################
+# READ: https://www.samba.org/samba/docs/man/manpages-3/vfs_acl_xattr.8.html
+# ! You must configure the share and security rights with a windows client when you set: acl_xattr:ignore system acl = yes
+# After setting this, makes sure, you have restarted samba, then configure the share and security rights.
+# (see: https://wiki.samba.org/index.php/Setting_up_a_Share_Using_Windows_ACLs)
+# Best is to dont mix posix and Windows ACL settings in a share. ! 
+# Setup the share as POSIX ACL or Windows ACL.
+# ( Not that it wont work, but it wil make your setup harder to maintain and debug )
+#
+# Im asumming the following:
+# - Assed "Domain Users" a GID with ADUC. ( yes, win10 missing unix tab, i used Win 7+ADUC, or use samba-tool  ) 
+# - Domain users is the primary gid for every user.
+# - I used Backend AD, you.... 
+# Read the Advantages and Disadvantages, then you choose.
+# https://wiki.samba.org/index.php/Idmap_config_ad
+# https://wiki.samba.org/index.php/Idmap_config_rid
+# 
+# - mkdir -p /home/samba/{profiles,users,data}
+# - chmod 1751 /home/samba/  ( root:root ) (1751, Creator Owner (=root=>mapping_user=>SAMBADOM\Administrator) 
+# 1751 explained.
+# 1 Creator Owner
+# 7 root ( maps to Administrator)
+# 5 root ( maps to BUILTIN\Administrators of which Domain Admins is a member)
+# 1 everyone ( everyone can enter this folder ) 
+# 
+# If you set your base rights in a subfolder, i suggest, 3770
+# 3 Creator (owner and group) This is where "Domain Users" for all users comes in. 
+# 7 (root)
+# 7 (BUILTIN\Administrators
+# 0 You dont want anyone enterint this folder. 
+# Now root/Administrator creates a new folder in /home/samba/data/group1
+#
+#    ! So only Administrator (root) can create/assign rights to new folders in the samba$ ( a administrative share. )
+# Now, login as SAMBADOM\Administrator with a domain joined PC, and setup your rights and folders in /home/samba
+# ( tip, drive map \\$(hostname -f)\samba$ )
+#
+[samba$]
+    # Used for Administrative things only.
+    browseable = yes
+    path = /home/samba
+    read only = no
+
+[profiles]
+    # user profiles folder
+    browseable = yes
+    path = /home/samba/profiles
+    read only = no
+    acl_xattr:ignore system acl = yes
+
+[users]
+    # user homedirs
+    browseable = yes
+    path = /home/samba/users
+    read only = no
+    acl_xattr:ignore system acl = yes
+#    veto files = /*.exe/*.com/*.dll/*.bat/*.vbs/*.tmp/*.mp3/*.avi/*.mp4/*.wmv/*.wma/*.mov/*.mpg/*.mpeg
+
+[data]
+    # data share for domain/company
+    browseable = yes
+    path = /home/samba/data
+    read only = no
+
+
