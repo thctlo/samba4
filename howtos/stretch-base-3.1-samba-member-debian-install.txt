@@ -1,3 +1,7 @@
+
+Part 3.1, the Debian samba Member install
+( tested on Debian Stretch, samba 4.5.8 )
+
 This is basicly a copy of the server setup in stretch-base-1.0.txt
 The "Configure the network" part changed a bit.
 
