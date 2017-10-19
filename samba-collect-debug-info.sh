@@ -1,12 +1,15 @@
 #!/bin/bash
 
-# Version 0.1
-# 
-
-set -e
+# skippeded 0.2-0.5 mutiple changes.
+#
+# 0.6
+# Few improvements by Rowland Penny.
+# small corrections by Louis van Belle.
 
 # This script helps with debugging problems when you report them on the samba list.
 # This really helps a lot in finding/helping with problems.
+# Dont attacht this in an e-mail the samba list wil strip of, 
+# add the content in the mail. 
 
 ################ Functions
 
@@ -15,30 +18,46 @@ if [ -e "${1}" ]; then
     {
     echo "Checking file: ${1} "
     cat "${1}"
-    echo " "
+    echo
     echo "-----------"
-    } >> $LOGFILE
+    } >> "$LOGFILE"
 else
     {
     echo "Warning, ${1} does not exist"
+    echo
     echo "-----------"
-    }  >> $LOGFILE
+    }  >> "$LOGFILE"
 fi
 }
 
 ############# Code
 
 LOGFILE="/tmp/samba-debug-info.txt"
-CHECK_PACKAGES="samba|winbind|krb5|smb|acl|xattr"
+CHECK_PACKAGES1="samba|winbind|krb5|smb|acl|xattr"
+CHECK_PACKAGES2="krb5|acl|xattr"
 ADDC=0
 UDM=0
 
 echo "Please wait, collecting debug info."
 
-echo "Collected config  --- $(date +%Y-%m-%d-%H:%m) -----------" > $LOGFILE
-echo " " >> $LOGFILE
+echo "Collected config  --- $(date +%Y-%m-%d-%H:%M) -----------" > $LOGFILE
+echo >> $LOGFILE
 
-RUNNING=$(ps xc | grep -E 'samba|smbd|nmbd|winbind')
+HOSTNAME="$(hostname -s)" 
+DOMAIN="$(hostname -d)"
+FQDN="$(hostname -f)"
+IP="$(hostname -i)"
+
+{
+echo "Hostname: ${HOSTNAME}"
+echo "DNS Domain: ${DOMAIN}"
+echo "FQDN: ${FQDN}"
+echo "ipaddress: ${IP}"
+echo
+echo "-----------"
+} >> $LOGFILE
+
+RUNNING=$(pgrep -xl 'samba|smbd|nmbd|winbindd')
 DC="no"
 NM="no"
 SM="no"
@@ -60,6 +79,18 @@ if [ "$DC" = "yes" ]; then
         ADDC=1
         SMBCONF=$(samba -b | grep 'CONFIGFILE' | awk '{print $NF}')
     fi
+
+    if [ "$SM" = "yes" ] && [ "$WB" = "no" ]; then
+	{
+        echo "Samba is running as an AD DC"
+        echo "'winbindd' is NOT running."
+        echo "Check that the winbind package is installed."
+	}  >> $LOGFILE
+        ROLE="ADDC"
+        ADDC=1
+        SMBCONF=$(samba -b | grep 'CONFIGFILE' | awk '{print $NF}')
+    fi
+
 else
     if [ "$SM" = "yes" ] && [ "$NM" = "yes" ] && [ "$WB" = "yes" ]; then
         ROLE=$(testparm -s --parameter-name='security' 2>/dev/null)
@@ -72,24 +103,34 @@ else
     fi
 fi
 
+
 if [ "$ADDC" = "0" ] && [ "$UDM" = "0" ]; then
     echo "Samba is not being run as a DC or a Unix domain member." >> $LOGFILE
 fi
 
-Check_file_exists /etc/os-release
-echo " " >> $LOGFILE
-# This is a bit of a chicken & egg situation
-# How to check if running on Debian or Devuan
-# without knowing if you are running on Debian or Devuan ????
-Check_file_exists /etc/debian_version
-Check_file_exists /etc/devuan_version
-{
 
+Check_file_exists /etc/os-release
+echo >> $LOGFILE
+Check_file_exists /etc/devuan_version
+# if this is Devuan, no need to check for Debian
+if [ "$?" != "0" ]; then
+    # It isn't Devuan, is it Debian ?
+    Check_file_exists /etc/debian_version
+    if [ "$?" != "0" ]; then
+        echo "This computer is not running either Devuan or Debian"
+        echo "This computer is not running either Devuan or Debian" >> $LOGFILE
+        echo "Cannot Continue...Exiting."
+        echo "Cannot Continue...Exiting." >> $LOGFILE
+        exit 1
+    fi
+fi
+
+
+{
 # running ipnumbers
-echo " "
-echo "running command : ip a" >> $LOGFILE
-ip a | grep -v forever >> $LOGFILE
-echo "-----------" >> $LOGFILE
+echo "running command : ip a"
+ip a | grep -v forever
+echo "-----------"
 } >> $LOGFILE
 
 Check_file_exists /etc/hosts
@@ -97,20 +138,22 @@ Check_file_exists /etc/krb5.conf
 Check_file_exists /etc/nsswitch.conf
 Check_file_exists "${SMBCONF}"
 
-USERMAP="$(grep "username map" ${SMBCONF} | awk '{print $NF }')"
+
+USERMAP="$(grep "username map" "${SMBCONF}" | awk '{print $NF }')"
 # auto..
-if [ -n "$DC" ]; then
+if [ -n "${DC}" ]; then
     SERVER_ROLE="$(samba-tool testparm -v --suppress-prompt | grep "server role"| cut -d"=" -f2)"
 else
     SERVER_ROLE="$(testparm -v -s | grep "server role"| cut -d"=" -f2)"
 fi
+
 
 if [ -n "${USERMAP}" ]; then
     if [ "$UDM" = "1" ]; then
         {
          echo "Content of $USERMAP"
          cat "$USERMAP"
-         echo " "
+         echo
          if [ "${SERVER_ROLE}" = "auto" ]; then
              echo "Server Role is set to : $SERVER_ROLE"
          fi
@@ -127,60 +170,75 @@ if [ -n "${USERMAP}" ]; then
     fi
 else
     {
-    echo "No username map was detected."
-    echo " "
+    echo "No username map detected."
+    echo
     echo "-----------"
     } >> $LOGFILE
 fi
 
 if [ "$ADDC" = "1" ]; then
+    found=0
     # check for bind9_dlz
     if [ "$(grep -c "\-dns" "${SMBCONF}")" -eq "1" ] || [ "$(grep "server services" "${SMBCONF}" | grep -wc 'dns')" -eq "0" ]; then
         echo "Detected bind DLZ enabled.." >> $LOGFILE
         if [ -d /etc/bind ]; then
+
             Check_file_exists "/etc/bind/named.conf"
             Check_file_exists "/etc/bind/named.conf.options"
             Check_file_exists "/etc/bind/named.conf.local"
             Check_file_exists "/etc/bind/named.conf.default-zones"
-            echo "-----------" >> $LOGFILE
+            zonelist="$(samba-tool dns zonelist "$(hostname -f)" -k yes -P)"
+
+            zones="$(echo "${zonelist}" | grep '[p]szZoneName' | awk '{print $NF}' | tr '\n' ' ')"
+            while read -d ' ' zone
+            do
+              zonetest=$(grep -r "${zone}" /etc/bind)
+              if [ -n "${zonetest}" ]; then
+                  found=$((found + 1))
+              fi
+            done <<< "${zones}"
+            if [ "${found}" -gt 0 ]; then
+                {
+                echo
+                echo "ERRROR: AD DC zones found in the Bind flat-files"
+                echo "This is not allowed, you must remove them."
+                echo
+                echo "-----------"
+                } >> $LOGFILE
+            fi
         else
             {
-            echo " "
+            echo
             echo "Warning, detected bind enabled in smb.conf, but no /etc/bind directory found"
+            echo 
             echo "-----------"
             } >> $LOGFILE
         fi
-
-        # named-checkconf -z, shows output of bind9_flatfiles
-        # Todo: Add check if no bind9_flatefiles zones are samba-ad zones.
-
-        # This isn't going to be easy
-        # named-checkconf -z produces this:
-        # zone localhost/IN: loaded serial 2
-        # zone 127.in-addr.arpa/IN: loaded serial 1
-        # zone 0.in-addr.arpa/IN: loaded serial 1
-        # zone 255.in-addr.arpa/IN: loaded serial 1
-
-        # I have these in dlz-zones:
-        # 0.168.192.in-addr.arpa
-        # samdom.example.com
-        # _msdcs.samdom.example.com
-
-        # 'samba-tool dns zonelist' will show the dlz-zones
-        # but will need a username & password
-        # and will the zones show if they are in flatfiles ???
-
     fi
 fi
 
-{
-echo " "
-echo "Installed packages, running: dpkg -l | egrep \"$CHECK_PACKAGES\""
-dpkg -l | egrep "$CHECK_PACKAGES"
-        echo "-----------"
-} >> $LOGFILE
+
+# Where is the 'smbd' binary ?
+SBINDIR="$(smbd -b | grep 'SBINDIR'  | awk '{ print $NF }')"
+if [ "${SBINDIR}" = "/usr/sbin" ]; then
+   {
+    echo
+    echo "Installed packages, running: dpkg -l | egrep \"$CHECK_PACKAGES1\""
+    dpkg -l | egrep "$CHECK_PACKAGES1"
+    echo "-----------"
+   } >> $LOGFILE
+else
+   {
+    echo "Self compiled Samba installed."
+    echo "Installed packages, running: dpkg -l | egrep \"$CHECK_PACKAGES2\""
+    dpkg -l | egrep "$CHECK_PACKAGES2"
+    echo "-----------"
+   } >> $LOGFILE  
+fi
 
 echo "The debug info about your system can be found in this file: $LOGFILE"
 echo "Please check this and if required, sanitise it."
 echo "Then copy & paste it into an  email to the samba list"
+echo "Do not attach it to the email, the Samba mailing list strips attachments."
 
+exit 0
