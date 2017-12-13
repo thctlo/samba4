@@ -2,7 +2,7 @@
 
 # skippeded 0.2-0.5 mutiple changes.
 #
-# 0.6
+# 0.7
 # Few improvements by Rowland Penny.
 # small corrections by Louis van Belle.
 
@@ -11,7 +11,15 @@
 # Dont attacht this in an e-mail the samba list wil strip of, 
 # add the content in the mail. 
 
+# the script needs to run as root.
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root or with sudo. Exiting now..."
+  exit 1
+fi
+
+
 ################ Functions
+
 
 Check_file_exists () {
 if [ -e "${1}" ]; then
