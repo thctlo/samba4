@@ -142,6 +142,7 @@ echo "-----------"
 } >> $LOGFILE
 
 Check_file_exists /etc/hosts
+Check_file_exists /etc/resolv.conf
 Check_file_exists /etc/krb5.conf
 Check_file_exists /etc/nsswitch.conf
 Check_file_exists "${SMBCONF}"
@@ -195,10 +196,10 @@ if [ "$ADDC" = "1" ]; then
             Check_file_exists "/etc/bind/named.conf.options"
             Check_file_exists "/etc/bind/named.conf.local"
             Check_file_exists "/etc/bind/named.conf.default-zones"
-            zonelist="$(samba-tool dns zonelist "$(hostname -f)" -k yes -P)"
+            zonelist="$(samba-tool dns zonelist ${FQDN} -k yes -P)"
 
             zones="$(echo "${zonelist}" | grep '[p]szZoneName' | awk '{print $NF}' | tr '\n' ' ')"
-            while read -d ' ' zone
+            while read -r -d ' ' zone
             do
               zonetest=$(grep -r "${zone}" /etc/bind)
               if [ -n "${zonetest}" ]; then
@@ -218,7 +219,7 @@ if [ "$ADDC" = "1" ]; then
             {
             echo
             echo "Warning, detected bind enabled in smb.conf, but no /etc/bind directory found"
-            echo 
+            echo " "
             echo "-----------"
             } >> $LOGFILE
         fi
@@ -241,7 +242,7 @@ else
     echo "Installed packages, running: dpkg -l | egrep \"$CHECK_PACKAGES2\""
     dpkg -l | egrep "$CHECK_PACKAGES2"
     echo "-----------"
-   } >> $LOGFILE  
+   } >> $LOGFILE
 fi
 
 echo "The debug info about your system can be found in this file: $LOGFILE"
