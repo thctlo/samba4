@@ -195,6 +195,8 @@ function check_host_ip {
     if [ ! -z ${HOST_GATEWAY} ]; then
         echo -n "Ping gateway ip : "
 	check_ping ${HOST_GATEWAY}
+	warning "Warning, no ping to gateway, this might be firewalled."
+	warning "check you internet connection, AD DNS might need it."
     fi
     if [ ! -z ${HOST_RESOLV_NAMESERV1} ]; then
 	echo -n "ping nameserver1: "
@@ -210,6 +212,8 @@ function check_host_ip {
     fi
     echo -n "Check ping google dns : "
     check_ping 8.8.8.8
+    warning "Warning, no ping to internet dns 8.8.8.8, this might be firewalled."
+    warning "Check you internet connection, AD DNS might need it."
 }
 
 function check_ping {
