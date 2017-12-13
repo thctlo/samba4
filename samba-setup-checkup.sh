@@ -17,9 +17,13 @@
 # get_samba_ should only show output of a running samba and test. 
 # like get_samba_fsmo
 
+# the script needs root or sudo to get all info.
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root, or use sudo. Exiting now..."
+  exit 1
+fi
 
 # ToDo 1: Get all system info and show system info. 
-
 
 # set some colors to outline Ok Warn en errors more.
 BLACK=$(tput setaf 0)
