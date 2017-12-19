@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 #
 # Copyright (C) Matthieu Patou <mat@matws.net> 2010-2011
 #
@@ -54,54 +54,49 @@
 # Revised 2015-12-14, Louis van Belle, as follows:
 #    - Script error when running from within, missed a typo.
 #    - added file definitions by date/time standards
+# Revised 2017-12-19, Louis van Belle:
+#    - exclude netlogon_creds_cli.tdb from the backups, its not needed, 
+#      see: https://bugzilla.samba.org/show_bug.cgi?id=13088
+#    - make keep_day work, in test now.
 ##
+
 
 #       Used format in the backup file names.
 #       date format: ISO 8601 YYYY-MM-DD (extended format)
 #       time format: ISO 8601 24-hour clock system [hh][mm][ss] (basic format).
 
-## Last modification LvB 27 juli 2016, small corrections.
-## This script is tested on debian Jessie. with samba 4.4.3 ( Recompiled version of debian Stretch. )
 
-# Where to store backups?
-# Change this to your backup location.
-STOREDIR=/home/backups/`hostname -s`
+# where to store backups ( change this )
+STOREDIR="/home/backups/$(hostname -s)"
 
-# This creates an extra acl backup of sysvol with getfacl -R (yes/no)
-# The default is ok.
+# this creates an extra acl backup of sysvol with getfacl -R (yes/no)
 BACKUP_SYSVOL_ACL="yes"
 
 # Full /etc backup (yes/no)
-# The default is ok.
 BACKUP_ETC="yes"
 
 # Number of days to keep the backup
-# The default is ok.
-DAYS=30
+DAYS=60
 
-# TODO/Not working yet.
-# KEEP_DAYS, keeps every date with 01 and 15 in the backup (yes/no)
-# while we obey the "DAYS" if set to no, only DAYS settings do apply
-# if you dont want numbered backup files like : sysvol-2015-12-10-0.tar.bz2 set to: yes
-# but if you want timed backup files like : sysvol-2015-12-10_091209.tar.gz set to: time
-# So options to set are :  yes, no, time
-KEEP_DAYS="no"
+# KEEP_DAYS, for auto cleanup and extra safe backups.
+# Keeps every date with ( defaults to ) 01e and 15e in the backup.
+# Files are older then XX DAYS will be removed automaticly. 
+# If set to "yes" then any file with 01 or 15 in it will not be removed.
+# default "yes" because its good the have backups even older then XX Days.
+# If set to "no", any file older then XX Days wil be removed from the backup.
+KEEP_DAYS="yes"
 
 # The day numbers of the month to keep, only effective if KEEP_DAYS="yes" !
-# if you did set keep_days=time you will keep hours of the day. ( like 01:00 and 15:00 )
-# timed files are in
 KEEP_DAY1="01"
 KEEP_DAY2="15"
 
-# The commandos this scripts needs.
-# The default is ok.
-SCRIPT_COMMANDS="samba tdbbackup logger tar dirname cat grep echo awk sed date find rm getfacl tail cut wc awk sort"
-# The location for the command file.
-# The default is ok, but can be any location.
-SCRIPT_COMMANDS_FILE="/etc/samba/backup_samba4_commands"
+# the commando's this scripts need. 
+SCRIPT_COMMANDS="echo samba tdbbackup logger tar dirname cat grep awk sed date find rm getfacl tail cut wc awk sort"
 
-# What to backup of samba, this should normally not have to be changed.
-# You better NEVER change this. We get the full paths from samba.
+# the location for the command file
+SCRIPT_COMMANDS_FILE="/etc/samba/bin/backup_samba4_commands"
+
+# what to backup of samba, this should normaly not be needed to change.
 DIRS="private sysvol samba"
 
 #########################################################################
@@ -128,20 +123,20 @@ if [ ! -e ${SCRIPT_COMMANDS_FILE} ]; then
 #        echo "SCRIPTCOMMAND : $SCRIPT_COMMAND "
 	EVAL_PROG="CMD_"
 	EVAL_PROG_DATA="${COMMANDS^^}"
-	EVAL_DATA="$(which $COMMANDS)"
+	EVAL_DATA="$(which ${COMMANDS})"
 
 	eval "${EVAL_PROG}${EVAL_PROG_DATA}"="\"${EVAL_DATA}\""
 	EVAL_CHECK="${EVAL_PROG}${EVAL_PROG_DATA}"
 
 	if [ -z "${EVAL_CHECK}" ] || [ -z "${EVAL_DATA}" ]; then
 	    echo "Error command ${EVAL_CHECK} is without data"
-	    echo "Please adjust this value manually in the file ${SCRIPT_COMMANDS_FILE}"
+	    echo "Please adjust this value manualy in the file ${SCRIPT_COMMANDS_FILE}"
 	    echo "${EVAL_CHECK}=\"${EVAL_DATA}\"" >> ${SCRIPT_COMMANDS_FILE}
 	else
 	    echo "${EVAL_CHECK}=\"${EVAL_DATA}\"" >> ${SCRIPT_COMMANDS_FILE}
 	fi
     done
-    echo "Exiting now...commands file created, please restart the script.."
+    echo "Exitting now...commands file created, please restart the script.."
     exit 1
 else
     source ${SCRIPT_COMMANDS_FILE}
@@ -153,14 +148,14 @@ else
 	if [ -z "${EVAL2_CHECK}" ]; then 
 	    echo "Error, ${EVAL2_CHECK} does not have a value"
 	    echo "Please put the command in the file ${SCRIPT_COMMANDS_FILE}"
-	    echo "Exiting now... "
+	    echo "Exitting now... "
 	    exit 1
 	fi
 
 	if [ ! -e "${!EVAL2_CHECK}" ]; then
 	    echo "Error, ${EVAL2_CHECK} is unset or set to the empty string"
 	    echo "Please correct the command in the file ${SCRIPT_COMMANDS_FILE}"
-	    echo "Exiting now... "
+	    echo "Exitting now... "
 	    exit 1 
 	fi
 
@@ -245,9 +240,11 @@ backup_file () {
 # check for existing backup files, if exist, create new files with following numbers.
 check_backup_file () {
     BACKUPDATE=$(${CMD_DATE} +%Y-%m-%d)	# ISO 8601 standard date.
+    echo "Backupdate = $BACKUPDATE"
     ${DEBUG} "Message: checking for previous backups of this day : $d"
-    # determine last use counter nr
+    # determin last use counter nr
     COUNTER=$(ls ${STOREDIR} | ${CMD_GREP} ${BACKUPDATE} | sort | ${CMD_GREP} $d | ${CMD_TAIL} -n1 | ${CMD_CUT} -d"-" -f5 | ${CMD_CUT} -d"." -f1)
+    echo "Counter = $COUNTER" 
     if [ -z "$COUNTER" ]; then 
 	COUNTER=0
 	BACKUPDATE="${BACKUPDATE}-${COUNTER}"
@@ -258,7 +255,7 @@ check_backup_file () {
     ${DEBUG} "Message: setting date and counter : ${BACKUPDATE} for  $d"
 }
 
-for d in $DIRS;do
+for d in $DIRS; do
     if [ "$d" = "private" ]; then
 	check_backup_file
         cd ${PRIVATEBASE} 
@@ -269,7 +266,8 @@ for d in $DIRS;do
             # backup .ldb files
 		    backup_file $ldb
 	    done
-        for tdb in $(${CMD_FIND} $d -name "*.tdb"); do
+	# exclude netlogon_creds_cli :  https://bugzilla.samba.org/show_bug.cgi?id=13088
+        for tdb in $(${CMD_FIND} $d -name "*.tdb" | grep -v netlogon_creds_cli); do
             # backup .tdb files
 		    backup_file $tdb
         done
@@ -332,11 +330,14 @@ for d in $DIRS;do
 	    fi
     elif [ "$d" = "samba" ]; then
 	check_backup_file
+	echo "conf dir here ${CONFDIR}"
         cd ${CONFDIR}
         if [ "${CONFILE}" = "/etc/samba/smb.conf" ]; then
             relativedirname=$(${CMD_FIND} . -type d -name "$d" -prune)
+	    echo "hier 1 ${relativedirname}"
         else
             relativedirname=$(${CMD_FIND} . -type d -name "etc" -prune)
+	    echo "hier 2 ${relativedirname}"
         fi
 	    # Run the backup.
 	    # --warning=no-file-ignored suppresses "socket ignored" messages.
@@ -372,12 +373,12 @@ if [ ${BACKUP_ETC} = "yes" ]; then
     fi
 fi
 
-## TODO/Not working yet
-# Remove any files over 30 days old from backup dir, keep the first and 15 of the month.
+# Remove any files over $DAYS days old from backup dir, keep the $KEEP_DAY1 and $KEEP_DAY2 of the month.
 if [ ${KEEP_DAYS} = "yes" ]; then 
-    ${DEBUG} "Deleting any backup files over ${DAYS} days old, keeping 1e and 15e."
-    ${CMD_FIND} ${STOREDIR} -name "*.bz2" -mtime +${DAYS} -exec  egrep -v "-${KEEP_DAY1}-*.tar.|-${KEEP_DAY2}-*.tar." | ${CMD_RM}  {} \; >/dev/null 2>&1
-else
+    ${DEBUG} "Deleting any backup files over ${DAYS} days old, keeping date $KEEP_DAY1 and $KEEP_DAY2 of the month."
+    ${CMD_FIND} ${STOREDIR} -name "*.bz2" -mtime +${DAYS} -type f -print | xargs -0 | egrep -v '\-$KEEP_DAY1\-|\-$KEEP_DAY2-' | xargs ${CMD_RM} >/dev/null 2>&1
+fi
+if [ ${KEEP_DAYS} = "no" ]; then 
     ${DEBUG} "Deleting any backup files over ${DAYS} days old."
     ${CMD_FIND} ${STOREDIR} -name "*.bz2" -mtime +${DAYS} -exec ${CMD_RM}  {} \; >/dev/null 2>&1
 fi
