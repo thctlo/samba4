@@ -45,18 +45,15 @@ Best is not to change this.
 Number of days to keep the backup.
 - DAYS=30
 
-TODO/ Not working yet, but if you know how, you can add the code. ;-)
 KEEP_DAYS, keeps every date with 01 and 15 in the backup (yes/no) 
 while we obey the "DAYS" if set to no, only DAYS settings do apply 
 if you dont want numberd backup files like : sysvol-2015-12-10-0.tar.bz2 set to: yes 
-but you want timed backup files like : sysvol-2015-12-10_091209.tar.gz set to: time
-So options to set are :  yes, no, time 
-- KEEP_DAYS="no"
+So options to set are :  yes, no
+- KEEP_DAYS="no" removes all files older then $DAYS
+- KEEP_DAYS="yes" removes all files older then $DAYS but now it keeps the day numbers
+  Set in KEEP_DAY1 and KEEP_DAY2
 
-
-TODO/ Not working yet, but if you know how, you can add the code. ;-)
 The day numbers of the month to keep, only effective if KEEP_DAYS="yes" !
-if you did set keep_days=time you will keep hours of the day. ( like 01:00 and 15:00 ) 
 timed files are in 
 - KEEP_DAY1="01"
 - KEEP_DAY2="15"
