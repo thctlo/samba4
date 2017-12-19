@@ -267,7 +267,7 @@ for d in $DIRS; do
 		    backup_file $ldb
 	    done
 	# exclude netlogon_creds_cli :  https://bugzilla.samba.org/show_bug.cgi?id=13088
-        for tdb in $(${CMD_FIND} $d -name "*.tdb" | grep -v netlogon_creds_cli); do
+        for tdb in $(${CMD_FIND} $d -name "*.tdb" -type f -print | xargs -0 | grep -v 'netlogon_creds_cli'); do
             # backup .tdb files
 		    backup_file $tdb
         done
@@ -334,10 +334,8 @@ for d in $DIRS; do
         cd ${CONFDIR}
         if [ "${CONFILE}" = "/etc/samba/smb.conf" ]; then
             relativedirname=$(${CMD_FIND} . -type d -name "$d" -prune)
-	    echo "hier 1 ${relativedirname}"
         else
             relativedirname=$(${CMD_FIND} . -type d -name "etc" -prune)
-	    echo "hier 2 ${relativedirname}"
         fi
 	    # Run the backup.
 	    # --warning=no-file-ignored suppresses "socket ignored" messages.
