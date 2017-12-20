@@ -16,7 +16,7 @@ samba-check-SePrivileges.sh : shows the configured SePrivileges and its groups s
 
 samba-check-set-sysvol.sh: check and set the ACL for sysvol and tells you what to check.
 
-samba-info.sh: simpel tool to show domain info.
+samba-info.sh: simpel tool to show domain info. Works now for AD Member and AD DC.
 
 samba-setup-checkup.sh: (Work in progress), Goal, check you system for the correct and needed setttings to install samba.
 
@@ -26,7 +26,4 @@ samba-dns-mass-add.sh: This script create hostnames between an asked range with 
 
 samba-collect-debug-info.sh: This script collects some debugging info to a file.  
 Please note, this script is tested only on debian, it will not work correctly yet for other OS and/or source installations.
-
-
-
 
