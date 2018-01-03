@@ -12,7 +12,7 @@ The first time you start it, run it with --debug, so you can check if all is ok.
 How does it work: 
 - The script collects the commands use in full path, if one isn't found you get a message and the script ends.
 - The script extracts the sysvol etc and private folders in full paths from the running samba.
-- The script uses a counter to make multple backups on the same day. 
+- The script uses a counter to make multple backups on the same day.
 - The script cleans up backup files older then DAYS.
 - This all is done without stopping samba.
 
@@ -45,7 +45,7 @@ Number of days to keep the backup.
 - DAYS=30
 
 KEEP_DAYS, keeps every date with 01 and 15 in the backup (yes/no) 
-while we obey the "DAYS" if set to no, only DAYS settings do apply 
+While we obey the "DAYS" if set to no, only DAYS settings do apply 
 if you dont want numberd backup files like : sysvol-2015-12-10-0.tar.bz2 set to: yes 
 So options to set are :  yes, no
 - KEEP_DAYS="no" removes all files older then $DAYS
@@ -53,7 +53,6 @@ So options to set are :  yes, no
   Set in KEEP_DAY1 and KEEP_DAY2
 
 The day numbers of the month to keep, only effective if KEEP_DAYS="yes" !
-timed files are in 
 - KEEP_DAY1="01"
 - KEEP_DAY2="15"
 
