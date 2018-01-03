@@ -58,8 +58,9 @@
 #    - exclude netlogon_creds_cli.tdb from the backups, its not needed, 
 #      see: https://bugzilla.samba.org/show_bug.cgi?id=13088
 #    - make keep_day work, in test now.
+# Revised 2017-12-19, Louis van Belle, Thanks Norbert Hanke.:
+#    - Fixed detection of samba/etc with a self compiled samba.
 ##
-
 
 #       Used format in the backup file names.
 #       date format: ISO 8601 YYYY-MM-DD (extended format)
@@ -264,23 +265,23 @@ for d in $DIRS; do
 	    ${CMD_FIND} $relativedirname -name "*.tdb.bak" -exec ${CMD_RM} {} \;
 	    for ldb in $(${CMD_FIND} $relativedirname -name "*.ldb"); do 
             # backup .ldb files
-		    backup_file $ldb
+		backup_file $ldb
 	    done
-	# exclude netlogon_creds_cli :  https://bugzilla.samba.org/show_bug.cgi?id=13088
+	    # exclude netlogon_creds_cli :  https://bugzilla.samba.org/show_bug.cgi?id=13088
         for tdb in $(${CMD_FIND} $d -name "*.tdb" -type f -print | xargs -0 | grep -v 'netlogon_creds_cli'); do
             # backup .tdb files
-		    backup_file $tdb
+		backup_file $tdb
         done
 	    # Run the backup.
 	    # --warning=no-file-ignored suppresses "socket ignored" messages.
-        # --warning=no-file-changed suppresses "file changed as we read it"
+	    # --warning=no-file-changed suppresses "file changed as we read it"
 	    ${CMD_TAR} ${TARARGS} ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2  \
             $relativedirname --exclude='*.ldb' --exclude='*.tdb' \
             --warning=no-file-ignored --warning=no-file-changed \
             --transform 's/.ldb.bak/.ldb/' --transform 's/.tdb.bak/.tdb/'
 	    Status=$?
 	    if [ $Status -ne 0 -a $Status -ne 1 ]; then
-            # Ignore 1 - private dir is always changing.
+	    # Ignore 1 - private dir is always changing.
 	        ${DEBUG} "Error archiving:"
 	        ${DEBUG} "    ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2"
 	        ${DEBUG} "    Status: $Status"
@@ -297,7 +298,7 @@ for d in $DIRS; do
         relativedirname=$(${CMD_FIND} . -type d -name "$d" -prune)
 	    # Run the backup.
 	    # --warning=no-file-ignored suppresses "socket ignored" messages.
-        # --warning=no-file-changed suppresses "file changed as we read it"
+	    # --warning=no-file-changed suppresses "file changed as we read it"
 	    ${CMD_TAR} ${TARARGS} ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2  \
             $relativedirname --warning=no-file-ignored --warning=no-file-changed
 	    Status=$?
@@ -330,16 +331,15 @@ for d in $DIRS; do
 	    fi
     elif [ "$d" = "samba" ]; then
 	check_backup_file
-	echo "conf dir here ${CONFDIR}"
         cd ${CONFDIR}
         if [ "${CONFILE}" = "/etc/samba/smb.conf" ]; then
             relativedirname=$(${CMD_FIND} . -type d -name "$d" -prune)
         else
-            relativedirname=$(${CMD_FIND} . -type d -name "etc" -prune)
+            relativedirname=$(${CMD_FIND} .. -type d -name "etc" -prune)
         fi
 	    # Run the backup.
 	    # --warning=no-file-ignored suppresses "socket ignored" messages.
-        # --warning=no-file-changed suppresses "file changed as we read it"
+	    # --warning=no-file-changed suppresses "file changed as we read it"
 	    ${CMD_TAR} ${TARARGS} ${STOREDIR}/${d}-${BACKUPDATE}.tar.bz2  \
             $relativedirname --warning=no-file-ignored --warning=no-file-changed
 	    Status=$?
