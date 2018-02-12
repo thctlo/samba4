@@ -264,7 +264,7 @@ done
 if [ ! -z ${EMAIL_REPORT_ADDRESS} ]; then
     if [ "${SAMBA_CHECKDB_WITH_LDAPCMD}" = "yes" ]; then
         for x in ${SAMBA_DCS}; do
-            $SET_SAMBATOOL ldapcmp --filter="$(LDAPCMD_FILTER)" ldap://$SAMBA_DC1 ldap://$x  -d0 2>&1 >> /tmp/samba_ldapcmp_checkdb
+            $SET_SAMBATOOL ldapcmp --filter="$(LDAPCMD_FILTER)" ldap://$SAMBA_DC1 ldap://$x  -d0 2>&1 > /tmp/samba_ldapcmp_checkdb
             if grep -q FAILURE /tmp/samba_ldapcmp_checkdb; then
                 cat /tmp/samba_ldapcmp_checkdb | ${SET_MAILTOOL} -s "FAILURE ldapcmp between $SETDCFSMO and $x" $EMAIL_REPORT_ADDRESS
             fi
@@ -290,7 +290,7 @@ else
         for x in ${SAMBA_DCS}; do
             message "Running : ${SET_SAMBATOOL} ldapcmp --filter='whenChanged' ldap://$SAMBA_DC1 ldap://$x "
             message "Please wait.. this can take a while.."
-            ${SET_SAMBATOOL} ldapcmp --filter="whenChanged" ldap://$SAMBA_DC1 ldap://$x  -d0 2>&1 >> /tmp/samba_ldapcmp_checkdb
+            ${SET_SAMBATOOL} ldapcmp --filter="whenChanged" ldap://$SAMBA_DC1 ldap://$x  -d0 2>&1 > /tmp/samba_ldapcmp_checkdb
             if grep -q FAILURE /tmp/samba_ldapcmp_checkdb; then
                 warning "`cat /tmp/samba_ldapcmp_checkdb`"
             else
