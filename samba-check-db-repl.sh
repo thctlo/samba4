@@ -1,6 +1,6 @@
 #!/bin/bash
 ##
-## Version      : 1.0.5
+## Version      : 1.0.6
 ## release d.d. : 24-03-2015
 ## Author       : L. van Belle
 ## E-mail       : louis@van-belle.nl
@@ -12,6 +12,7 @@
 ## 24-04-2015   : 1.0.4 added extra check, so if no is if found, you get an error message and not a python error.
 ## 21-11-2016   : 1.0.5 extra filter options. ( samba 4.5.x needs adjusting )
 # ( removed the . in the hostname resolving for the DCS, this was no error, but its more clear what people want to see )
+## 12-02-2018   : 1.0.6 fix  the test for presence of "FAILURE" will be true even if the actual result is "successful".
 
 ## Samba database checker. ( ! TESTED ON DEBIAN JESSIE samba 4.1.x-4.5.x )
 ## This script wil check for error in the samba databases with samba-tool
