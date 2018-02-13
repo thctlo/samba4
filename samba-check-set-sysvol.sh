@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-# Version=0.10
+# Version=0.2
 
 # This program is tested on debian Stretch.
 # This program is tested on Devuan Jessie.
@@ -22,6 +22,8 @@ DC_ADMINISTRATORS="S-1-5-32-544"
 DC_SYSTEM="S-1-5-18"
 DC_AUTHENTICATED_USERS="S-1-5-11"
 
+# apply the change right now, or review it yourself first.
+APPLY_CHANGES_DIRECT="no"
 
 Check_Error () {
 if [ "$?" -ge 1 ]; then
@@ -217,7 +219,7 @@ Apply_DC_SYVOL_ACL_FILE () {
 
 Show_Info () {
     cat <<EOF
-The sysvol ACLS have been reset.....
+The sysvol ACLS info.....
 
 Please check your share rights for sysvol from within windows.
 If these are incorrect, correct them and run this script again.
@@ -237,5 +239,10 @@ EOF
 
 # Program.
 Create_DC_SYVOL_ACL_FILE
-Apply_DC_SYVOL_ACL_FILE
+if [ "${APPLY_CHANGES_DIRECT}" = "yes" ]; then 
+    Apply_DC_SYVOL_ACL_FILE
+else
+    echo "Review the file : default-rights-sysvol.acl, these contains the defaults for sysvol."
+fi
+
 Show_Info
