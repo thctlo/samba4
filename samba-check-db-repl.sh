@@ -87,7 +87,7 @@ SETREMOVELOG="no"
 
 ## So you reached the end for the configure..
 ## Set this one to yes.. and your good to go.
-CONFIGURED="yes"
+CONFIGURED="no"
 
 
 #######################################################################
