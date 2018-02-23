@@ -293,8 +293,12 @@ and if this is done run :
 pam-auth-update
 
 # Kerberos ssh logins. the basics.. 
-# If you need to be able to login with ssh. run the following. 
-apt-get install ssh-krb5
+# If you need to be able to login with ssh, just make sure that /etc/ssh/sshd_config
+#  contains:
+
+    GSSAPIAuthentication yes
+    GSSAPIKeyExchange yes
+
 # this enables kerberos logins. 
 # ! Note, by default on debian any user with uid 1000+ is able to login. 
 
