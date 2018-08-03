@@ -1,0 +1,364 @@
+#
+# A small howoto for Ubuntu 18.04 while using my Debian Samba 4.8.x packages.
+# Based on my Debian installs.
+# This works fine, but DONT install to much extra packages. 
+# Packages like talloc tevent ldb tdb are not alligned with the Ubuntu.
+
+
+This should be a good base to start with as howto for Ubuntu 18.04 systemd based. 
+
+Any suggestion additions please add them, below is also the order i configured and installed the server.
+Note, apparmor may have to much rights now but it works, someone with good apparmor knowledge correct it please.
+
+The setup below is tested and works, i did not look at fire-walling. 
+Try it and tell us the result. 
+----------------------------------------------------------------------------
+Installing Ubuntu for a Dedicated Active Directory Domain Controller server.
+- boot from CD
+- Choose the base language, and press F6, choose EXPERT. 
+
+-----Ubuntu Installer Menu  ---- 
+choose you language and keyboard
+( go throught the other options, keep the defaults )
+load the pre-configuration
+
+configure the network. 
+- Auto-configure networking   (NO)
+ and enter your ip. 
+    IP 192.168.0.10/24   ( choose your own ip )
+    GW 192.168.0.1       ( choose your own gateway)
+    NS 8.8.8.8           ( any internet ip for DNS )
+
+    ( my test hostname/domain )
+    set the hostname,	( ubuntu1804 )
+    set the domainname, ( internal.example.com )
+
+Set up users and passwords.
+THe first two questions, the defaults are ok. 
+
+The user, full name, what you want but NO username Administrator.
+i prefer nixadmin 
+( this is a user for maintaining the system. )
+
+encrypt homedir, No.
+configure clock.
+    set the clock using NTP. (yes)
+    You can keep the defaults ( for now )
+
+Configure the disk.
+what you want, a AD-DC only server, 10G is more than sufficient. ( for me ) 
+My current Debian 9 shows : 
+Size  Used Avail Use% Mounted on
+6.0G  1.8G  3.9G  31% /
+
+This ubuntu setup used ( finished ) 
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       7.3G  1.8G  5.2G  26% /
+
+So about the same.
+
+WARNING
+The "use entire disk" option does not include the swap partition.
+with 10Gb partition i set 2GB swap, rest is for the system. 
+(tip, separating the log partition helps in less defragmentation )
+
+--- Install the system
+initrd, DONT select targeted, choose generic.
+- package manager, use a mirror yes.
+
+- Don't select back-ported software.
+- Don't select partner repository, only if you need to.
+- Don't select sources, its not needed.
+Keep other defaults.
+
+- Select and install software.
+    I preffer Install security updated automatically, but you might not.
+
+Now, an important part, 
+Choose software to install. 
+Select ONLY OpenSSH server.
+
+- install grub. 
+(keep the defaults)
+Note, sometimes ubuntu detects you disk wrong if you install from usb.
+use ALT-F2 goto and console, type df and check what your disk is.
+/dev/sda or /dev/xvda  something like that. ( look for the /target disk )
+ALT-F1 go back to the installer.
+Finish the install
+
+Login. 
+
+first check if you ip is up.
+type: ip a
+and what is your "interface name" for me its eth0.
+All below is base on ETH0 so change this !! 
+
+Now, you might find out that your network isnt working. 
+lets configure a systemd static ip.
+
+AGAIN: Please don't forget to change the ip and interface-name below!!
+
+cat << EOF >> /etc/systemd/network/50-static.network
+# /etc/systemd/network/50-static.network
+    [Match]
+    Name=eth0
+
+    [Network]
+    Address=192.168.0.10/24
+    Gateway=192.168.0.1
+EOF
+systemctl enable systemd-networkd
+systemctl start systemd-networkd
+systemctl status systemd-networkd
+
+
+Edit the systemd resolver.
+
+nano /etc/systemd/resolv.conf
+configure DNS and FallbackDNS ( for now, 8.8.8.8 and 8.8.4.4 google dns. )
+NOTE set DNSSEC=no also because google does not support DNSSEC.
+save,exit.
+
+systemctl daemon-reload
+systemctl restart systemd-resolved
+
+And check if it works
+nslookup www.google.com
+
+Add my (Debian) repo
+echo "deb http://apt.van-belle.nl/debian stretch-samba48 main contrib non-free" | sudo tee -a /etc/apt/sources.list.d/van-belle.list
+wget -O - http://apt.van-belle.nl/louis-van-belle.gpg-key.asc | apt-key add -
+apt update -y
+
+And have a look.
+apt-cache policy samba
+
+
+-- Some Cleanup i did first.  ( optional, but the lesser on the server the better imo )
+First, get rid of the "howto make you system slower..." command-not-found packages
+but wait a bit because you might miss some packages... 
+( remove if you dont use these. )
+apt remove --purge lxd-client
+apt remove --purge lxd lxd-client
+apt remove --purge lxcfs 
+apt remove --purge command-not-found command-not-found-data python3-commandnotfound
+apt remove --purge snapd
+apt remove --purge laptop-detect 
+So, now this Ubuntu server performs almost as a Debian server. ;-) 
+
+Optional, as i dont use LVM.  ( i snap shot my virtuals )
+apt remove --purge lvm2 liblvm2app2.2 liblvm2cmd2.02 dmeventd
+
+Optional, i dont like the check every login for security/load etc. 
+It just slows down the server imo. 
+
+Optional, remove cpu info at login.
+rm  /etc/update-motd.d/50-landscape-sysinfo
+run the command : landscape-sysinfo  to get the info or remove it: 
+apt remove --purge landscap-sysinfo
+
+Optional, disable the anoying motd messages. 
+sudo systemctl disable motd
+sudo systemctl mask motd
+sudo chmod -R 0644 /etc/update-motd.d/ 
+if you want you can enable some, just add the Execute bit. (755) back on a file.
+
+#Optional(2) if you dont want any of above.
+#apt remove --purge update-notifier-common
+My advice is just chmod it. 
+
+Results in a server with internet access and ssh. 
+
+--------------------------------------------------
+
+Login with ssh, and prepare for the real work for samba. 
+
+
+Preparing for samba.  
+# the AD DC, with ntp bind one liner :  
+apt install samba winbind libnss-winbind libpam-winbind ntp bind9 binutils ldb-tools krb5-user
+# Note, i use the defaults for krb5-user ( Kerberos configuration )
+
+#The separated parts. 
+#apt install samba winbind krb5-user
+#(optional must often used so install it. )
+#apt install libnss-winbind  libpam-winbind
+
+for the time sync in samba we need ntp or chrony. 
+#Prepare time ( I preffer ntp.) 
+#apt install ntp
+#Prepare DNS ( I preffer bind9 )
+#apt install bind9
+
+# and add some tools you might need.
+#apt install binutils ldb-tools smbclient 
+#apt install libpam-krb5
+
+
+systemctl disable nmbd smbd winbind 
+systemctl stop nmbd smbd winbind 
+systemctl unmask samba-ad-dc
+systemctl enable samba-ad-dc
+
+---------------------
+Setup NTP
+cp /etc/ntp.conf{,.backup}
+mkdir -p /var/lib/samba/ntp_signd/
+chmod 750 /var/lib/samba/ntp_signd
+chown root:ntp /var/lib/samba/ntp_signd
+
+cat << EOF >> /etc/ntp.conf
+#
+######  Needed for Samba 4  ######
+# extra info, in the restrict -4 or -6 added mssntp.
+# Location of the samba ntp_signed directory
+ntpsigndsocket /var/lib/samba/ntp_signd
+#
+EOF
+
+# add the mssntp part.
+sed -i 's/restrict -4 default kod notrap nomodify nopeer noquery limited/restrict -4 default kod notrap nomodify nopeer noquery limited mssntp/g' /etc/ntp.conf
+sed -i 's/restrict -6 default kod notrap nomodify nopeer noquery limited/restrict -6 default kod notrap nomodify nopeer noquery limited mssntp/g' /etc/ntp.conf
+
+systemctl restart ntp
+systemctl status ntp
+run : ntpq -p
+and check the output, if ok, ntp is up now and syncing. 
+
+---------------------
+Setup kerberos.
+Backup the original version 
+cp /etc/krb5.conf{,.backup}
+cat /etc/krb5.conf | head -n2 > /etc/krb5.conf.new
+
+echo "
+; Note, this is added because other software may need it. 
+; personaly i would remove : des-cbc-crc des-cbc-md5 but for compatibility i leave it in.
+; for Windows 2008 with AES
+        default_tgs_enctypes =  aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96 rc4-hmac des-cbc-crc des-cbc-md5
+        default_tkt_enctypes = aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96 rc4-hmac des-cbc-crc des-cbc-md5
+        permitted_enctypes = aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96 rc4-hmac des-cbc-crc des-cbc-md5
+" >> /etc/krb5.conf.new
+rm /etc/krb5.conf
+mv /etc/krb5.conf.new /etc/krb5.conf
+
+
+---------------------
+# Setup Samba 
+Prepare for provisioning. 
+rm /var/lib/samba/*.tdb
+rm /var/cache/samba/*.tdb
+rm /var/cache/samba/browse.dat
+
+mv /etc/samba/smb.conf /etc/samba/smb.conf.orig
+
+samba-tool domain provision --use-rfc2307 --realm=INTERNAL.EXAMPLE.COM --domain=INTERNAL --dns-backend=BIND9_DLZ
+Admin password:        uP9B=H?H#%Mg@R6[H
+Server Role:           active directory domain controller
+Hostname:              ubuntu1804
+NetBIOS Domain:        INTERNAL
+DNS Domain:            internal.example.com
+DOMAIN SID:            S-1-5-21-851884449-3694958272-1707027855
+
+# Setup BIND
+cp -r /etc/bind{,.backup}
+# enable the forwarders. 
+sed -i 's[// forwarders[forwarders[g' /etc/bind/named.conf.options
+sed -i "s[// \t0.0.0.0;[      8.8.8.8; 8.8.4.4;[g" /etc/bind/named.conf.options
+sed -i "s[// };[};[g" /etc/bind/named.conf.options
+sed -i "/listen-on-v6/a \        tkey-gssapi-keytab \"/var/lib/samba/private/dns.keytab\";" /etc/bind/named.conf.options
+sed -i "/tkey-gssapi-keytab/i \        // DNS dynamic updates via Kerberos "/var/lib/samba/private/dns.keytab";" /etc/bind/named.conf.options
+sed -i "/listen-on-v6/a \        notify no;" /etc/bind/named.conf.options
+sed -i "/notify no/a        empty-zones-enable no;" /etc/bind/named.conf.options
+
+echo "// adding the Samba dlopen ( Bind DLZ ) module
+include \"/var/lib/samba/private/named.conf\";" >> /etc/bind/named.conf.local
+
+
+As of this part, apparmor, this might need more optimizing but this works.
+echo "# Samba4 DLZ and Active Directory Zones (default source installation)
+/var/lib/samba/lib/** rm,
+/var/lib/samba/private/dns/** rwmk,
+/var/lib/samba/private/dns.keytab r,
+/var/lib/samba/private/named.conf r,
+/var/lib/samba/private/dns/** rwk,
+/usr/lib/**/samba/bind9/** rmk,
+/usr/lib/**/samba/gensec/* rmk,
+/usr/lib/**/samba/ldb/** rmk,
+/usr/lib/**/ldb/modules/ldb/** rmk,
+/var/tmp/** rwmk," >> /etc/apparmor.d/local/usr.sbin.named
+
+# add the ntp part to apparmor
+echo "# samba4 ntp signing socket
+/var/lib/samba/ntp_signd/socket rw," >> /etc/apparmor.d/local/usr.sbin.ntpd
+
+---------------------
+Correct the resolving. 
+
+Now we link the lan interface to the systemd resolver. 
+echo "
+[Match]
+Name=eth0
+
+[Network]
+DNS=192.168.0.10
+DNSSECNegativeTrustAnchors=lan
+Domains=lan" >> /etc/systemd/network/eth0.network
+
+and we change the systemd-resolved and point it to the IP ( NOT localhost ) of the server
+now change the systemd-resolvd DNS.
+sed -i "s/DNS=8.8.8.8/DNS=$(hostname -i)/g" /etc/systemd/resolved.conf 
+# Note, the DNS=$(hostname -i)  that is the ip of the server. NOT 127.0.0.1. 
+
+Now i dont like warnings or errors in my logs. 
+And we now might see: 
+/lib/systemd/system-generators/netplan failed with exit status 1. 
+The fix is:  editor /etc/netplan/01-netcfg.yaml
+The last adresses: needs a server adres. 
+
+cat /etc/netplan/01-netcfg.yaml
+# This file describes the network interfaces available on your system
+# For more information, see netplan(5).
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      addresses: [ 192.168.249.31/24 ]
+      gateway4: 192.168.249.1
+      nameservers:
+          search: [ internal.example.com ]
+          addresses: 
+
+The corrected version is :
+cat /etc/netplan/01-netcfg.yaml
+# This file describes the network interfaces available on your system
+# For more information, see netplan(5).
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      addresses: [ 192.168.249.31/24 ]
+      gateway4: 192.168.249.1
+      nameservers:
+          search: [ internal.example.com ]
+          addresses: [ 192.168.249.31 ]		<<<< IP OF THE AD-DC. 
+
+When this is set run the following.
+netplan --debug generate
+
+# and we reload some services. 
+systemctl daemon-reload
+systemctl reload apparmor
+systemctl restart systemd-networkd
+systemctl restart systemd-resolved
+systemctl restart bind9
+systemctl restart ntp
+now check your logs, and if ok clear them.
+
+and reboot.
+now check your logs, again. 
+
+now go testing.  ;-) 
+
