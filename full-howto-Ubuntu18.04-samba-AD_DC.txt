@@ -1,9 +1,10 @@
 #
-# A small howoto for Ubuntu 18.04 while using my Debian Samba 4.8.x packages.
-# Based on my Debian installs.
-# This works fine, but DONT install to much extra packages. 
-# Packages like talloc tevent ldb tdb are not alligned with the Ubuntu.
-
+# A small howoto for Ubuntu 18.04.
+# This one is based on my Debian installs.
+#
+# As of 14 Nov 2018, you can use this with the new ubuntu 18.04 repo. ( info below in this file. ) 
+# The ubuntu bionic  for samba 4.9 repo contains all needed ubuntu packages.
+# You can use the Debian Stretch samba 4.8 packages also on ubuntu 18.04 but you better use the 4.9 repo for ubuntu.
 
 This should be a good base to start with as howto for Ubuntu 18.04 systemd based. 
 
@@ -298,7 +299,8 @@ echo "# samba4 ntp signing socket
 ---------------------
 Correct the resolving. 
 
-Now we link the lan interface to the systemd resolver. 
+Now we link the lan interface to the systemd resolver.  
+! Please note, you might need to change eth0.network to you interface name. 
 echo "
 [Match]
 Name=eth0
