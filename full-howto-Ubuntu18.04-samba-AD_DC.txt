@@ -126,6 +126,9 @@ And check if it works
 nslookup www.google.com
 
 Add my (Debian) repo
+There is now a ubuntu repo for 4.9.2
+echo "deb http://apt.van-belle.nl/debian bionic-samba49 main contrib non-free" | sudo tee -a /etc/apt/sources.list.d/van-belle.list
+Or for the 4.8.x, use the debian stretch repo.
 echo "deb http://apt.van-belle.nl/debian stretch-samba48 main contrib non-free" | sudo tee -a /etc/apt/sources.list.d/van-belle.list
 wget -O - http://apt.van-belle.nl/louis-van-belle.gpg-key.asc | apt-key add -
 apt update -y
@@ -324,8 +327,8 @@ network:
   renderer: networkd
   ethernets:
     eth0:
-      addresses: [ 192.168.249.31/24 ]
-      gateway4: 192.168.249.1
+      addresses: [ 192.168.0.10/24 ]
+      gateway4: 192.168.0.1
       nameservers:
           search: [ internal.example.com ]
           addresses: 
@@ -339,11 +342,11 @@ network:
   renderer: networkd
   ethernets:
     eth0:
-      addresses: [ 192.168.249.31/24 ]
-      gateway4: 192.168.249.1
+      addresses: [ 192.168.0.10/24 ]
+      gateway4: 192.168.0.1
       nameservers:
           search: [ internal.example.com ]
-          addresses: [ 192.168.249.31 ]		<<<< IP OF THE AD-DC. 
+          addresses: [ 192.168.0.10 ]		<<<< IP OF THE AD-DC. 
 
 When this is set run the following.
 netplan --debug generate
