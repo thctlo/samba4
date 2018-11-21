@@ -275,6 +275,8 @@ sed -i "/tkey-gssapi-keytab/i \        // DNS dynamic updates via Kerberos "/var
 sed -i "/listen-on-v6/a \        notify no;" /etc/bind/named.conf.options
 sed -i "/notify no/a        empty-zones-enable no;" /etc/bind/named.conf.options
 
+Please note, check if :  auth-nxdomain yes;  if enabled, you need yes to the new samba backup onnline tool.
+
 echo "// adding the Samba dlopen ( Bind DLZ ) module
 include \"/var/lib/samba/private/named.conf\";" >> /etc/bind/named.conf.local
 
