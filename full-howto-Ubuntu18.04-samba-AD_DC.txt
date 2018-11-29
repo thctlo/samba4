@@ -127,7 +127,7 @@ And check if it works
 nslookup www.google.com
 
 Add my (Debian) repo
-There is now a ubuntu repo for 4.9.2
+There is now a ubuntu repo for 4.9.x
 echo "deb http://apt.van-belle.nl/debian bionic-samba49 main contrib non-free" | sudo tee -a /etc/apt/sources.list.d/van-belle.list
 Or for the 4.8.x, use the debian stretch repo.
 echo "deb http://apt.van-belle.nl/debian stretch-samba48 main contrib non-free" | sudo tee -a /etc/apt/sources.list.d/van-belle.list
