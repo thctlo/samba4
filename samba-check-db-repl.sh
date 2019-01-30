@@ -1,7 +1,7 @@
 #!/bin/bash -v
 
 ##
-## Version      : 1.0.7
+## Version      : 1.0.8
 ## release d.d. : 24-03-2015
 ## Author       : L. van Belle
 ## E-mail       : louis@van-belle.nl
@@ -15,8 +15,9 @@
 ## ( removed the . in the hostname resolving for the DCS, this was no error, but its more clear what people want to see )
 ## 12-02-2018   : 1.0.6 fix the test for presence of "FAILURE" will be true even if the actual result is "successful".
 ## 13-02-2018   : 1.0.7 fix filter, variable was not used. optimized code, remove ^M.
+## 30-01-2019   : 1.0.8 change filter defaults to whenChanged,dc,DC,cn,CN
 
-## Samba database checker. ( ! TESTED ON DEBIAN JESSIE samba 4.1.x-4.5.x )
+## Samba database checker. ( samba 4.1-4.8 tested) 
 ## This script wil check for error in the samba databases with samba-tool
 ## If needed adjust it to your os needs.
 
@@ -52,7 +53,7 @@ SAMBA_CHECKDB_WITH_LDAPCMD="yes"
 ## Change the filter to avoid mismatching, some items can be ignored.
 ## Some examples. : whenChanged,usnChanged,usnCreated,msDS-NcType,serverState
 ## add them with "," seperated.
-SAMBA_LDAPCMD_FILTER="whenChanged,dc,DC"
+SAMBA_LDAPCMD_FILTER="whenChanged,dc,DC,cn,CN"
 
 # TODO, this one is not integrated yet! 
 ## Compare single AD partitions on Domain Controller DC1 and DC2:
