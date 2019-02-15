@@ -27,3 +27,12 @@ samba-dns-mass-add.sh: This script create hostnames between an asked range with 
 samba-collect-debug-info.sh: This script collects some debugging info to a file.  
 Please note, this script is tested only on debian, it will not work correctly yet for other OS and/or source installations.
 ONLY tested on AD-DC setups, not yet for member servers. 
+
+
+## donations
+If you like my work, support me a bit, even with 1 $ your helping me.  
+I dont ask for hunderds, a (few) buck(s) are a great gift also.  
+- [Donate via Paypal](https://www.paypal.me/LouisVanBelle) (my paypal email is louis at van-belle .nl)
+- Donate via Bitcoin: 3BMEXFUrncjVKByryNU1fcVLBLKE8i9TpX
+
+## Thanks
