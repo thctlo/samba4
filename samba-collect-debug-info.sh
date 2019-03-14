@@ -2,7 +2,7 @@
 
 # skippeded 0.2-0.5 mutiple changes.
 #
-# 0.8, added idmapd.conf, fix samba-tool dns output + other small improvements.
+# 0.8.1, added idmapd.conf, fix samba-tool dns output + other small improvements.
 # 
 # Few improvements by Rowland Penny.
 # small corrections by Louis van Belle.
@@ -18,7 +18,12 @@ if [ "$EUID" -ne 0 ]
   exit 1
 fi
 
-
+kinit Administrator
+ if [ "$?" -ge 1 ]
+ then
+     echo "Wrong password, exiting now. "
+     exit 1
+fi
 ################ Functions
 
 
@@ -187,7 +192,6 @@ else
     echo "-----------"
     } >> $LOGFILE
 fi
-
 if [ "$ADDC" = "1" ]; then
     found=0
     # check for bind9_dlz
@@ -199,7 +203,7 @@ if [ "$ADDC" = "1" ]; then
             Check_file_exists "/etc/bind/named.conf.options"
             Check_file_exists "/etc/bind/named.conf.local"
             Check_file_exists "/etc/bind/named.conf.default-zones"
-            echo "Samba DNS zone list: " >> $LOGFILE
+            echo -n "Samba DNS zone list: " >> $LOGFILE
             samba-tool dns zonelist ${FQDN} -k yes -P >> $LOGFILE
             echo  >> $LOGFILE
             echo "Samba DNS zone list Automated check : " >> $LOGFILE
@@ -211,27 +215,29 @@ if [ "$ADDC" = "1" ]; then
               if [ -n "${zonetest}" ]; then
                   found=$((found + 1))
               fi
-            done <<< "${zones}"
+
             if [ "${found}" -gt 0 ]; then
                 {
-                echo
-                echo "ERRROR: AD DC zones found in the Bind flat-files"
-                echo "This is not allowed, you must remove them."
-                echo
-                echo "-----------"
+                echo >> $LOGFILE
+                echo "ERRROR: AD DC zones found in the Bind flat-files" >> $LOGFILE
+                echo "This is not allowed, you must remove them." >> $LOGFILE
+                echo >> $LOGFILE
+                echo "-----------" >> $LOGFILE
                 } >> $LOGFILE
+            else
+                echo "zone : ${zone} ok, no Bind flat-files found" >> $LOGFILE
             fi
+            done <<< "${zones}"
         else
             {
-            echo
-            echo "Warning, detected bind enabled in smb.conf, but no /etc/bind directory found"
-            echo " "
-            echo "-----------"
+            echo >> $LOGFILE
+            echo "Warning, detected bind enabled in smb.conf, but no /etc/bind directory found" >> $LOGFILE
+            echo " " >> $LOGFILE
+            echo "-----------" >> $LOGFILE
             } >> $LOGFILE
         fi
     fi
 fi
-
 
 # Where is the 'smbd' binary ?
 SBINDIR="$(smbd -b | grep 'SBINDIR'  | awk '{ print $NF }')"
