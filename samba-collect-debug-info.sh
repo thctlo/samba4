@@ -2,7 +2,8 @@
 
 # skippeded 0.2-0.5 mutiple changes.
 #
-# 0.7
+# 0.8, added idmapd.conf, fix samba-tool dns output + other small improvements.
+# 
 # Few improvements by Rowland Penny.
 # small corrections by Louis van Belle.
 
@@ -41,8 +42,8 @@ fi
 ############# Code
 
 LOGFILE="/tmp/samba-debug-info.txt"
-CHECK_PACKAGES1="samba|winbind|krb5|smb|acl|xattr"
-CHECK_PACKAGES2="krb5|acl|xattr"
+CHECK_PACKAGES1="samba|winbind|krb5|smb|acl|attr"
+CHECK_PACKAGES2="krb5|acl|attr"
 ADDC=0
 UDM=0
 
@@ -54,7 +55,7 @@ echo >> $LOGFILE
 HOSTNAME="$(hostname -s)" 
 DOMAIN="$(hostname -d)"
 FQDN="$(hostname -f)"
-IP="$(hostname -i)"
+IP="$(hostname -I)"
 
 {
 echo "Hostname: ${HOSTNAME}"
@@ -119,11 +120,12 @@ fi
 
 Check_file_exists /etc/os-release
 echo >> $LOGFILE
-Check_file_exists /etc/devuan_version
-# if this is Devuan, no need to check for Debian
+Check_file_exists /etc/debian_version
+# if this is Debian, no need to check for Devuan.
 if [ "$?" != "0" ]; then
-    # It isn't Devuan, is it Debian ?
-    Check_file_exists /etc/debian_version
+    # It isn't Debian, is it Devuan ?
+    Check_file_exists /etc/devuan_version
+    # TODO: add ubuntu checks
     if [ "$?" != "0" ]; then
         echo "This computer is not running either Devuan or Debian"
         echo "This computer is not running either Devuan or Debian" >> $LOGFILE
@@ -145,6 +147,7 @@ Check_file_exists /etc/hosts
 Check_file_exists /etc/resolv.conf
 Check_file_exists /etc/krb5.conf
 Check_file_exists /etc/nsswitch.conf
+Check_file_exists /etc/idmapd.conf
 Check_file_exists "${SMBCONF}"
 
 
@@ -196,8 +199,11 @@ if [ "$ADDC" = "1" ]; then
             Check_file_exists "/etc/bind/named.conf.options"
             Check_file_exists "/etc/bind/named.conf.local"
             Check_file_exists "/etc/bind/named.conf.default-zones"
+            echo "Samba DNS zone list: " >> $LOGFILE
+            samba-tool dns zonelist ${FQDN} -k yes -P >> $LOGFILE
+            echo  >> $LOGFILE
+            echo "Samba DNS zone list Automated check : " >> $LOGFILE
             zonelist="$(samba-tool dns zonelist ${FQDN} -k yes -P)"
-
             zones="$(echo "${zonelist}" | grep '[p]szZoneName' | awk '{print $NF}' | tr '\n' ' ')"
             while read -r -d ' ' zone
             do
