@@ -2,7 +2,7 @@
 
 # skippeded 0.2-0.5 mutiple changes.
 #
-# 0.8.1, added idmapd.conf, fix samba-tool dns output + other small improvements.
+# 0.8.2, small fix in bind_dlz detection.
 # 
 # Few improvements by Rowland Penny.
 # small corrections by Louis van Belle.
@@ -195,7 +195,7 @@ fi
 if [ "$ADDC" = "1" ]; then
     found=0
     # check for bind9_dlz
-    if [ "$(grep -c "\-dns" "${SMBCONF}")" -eq "1" ] || [ "$(grep "server services" "${SMBCONF}" | grep -wc 'dns')" -eq "0" ]; then
+    if [ "$(grep -c "\-dns" "${SMBCONF}")" -eq "1" ] || [ "$(grep "server services" "${SMBCONF}" | grep -wc '\-dns')" -eq "1" ]; then
         echo "Detected bind DLZ enabled.." >> $LOGFILE
         if [ -d /etc/bind ]; then
 
@@ -236,6 +236,9 @@ if [ "$ADDC" = "1" ]; then
             echo "-----------" >> $LOGFILE
             } >> $LOGFILE
         fi
+    else
+        echo "No bind_DLZ detected in smb.conf" >> $LOGFILE
+        echo "--------------------------------------"  >> $LOGFILE
     fi
 fi
 
