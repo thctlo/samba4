@@ -1,11 +1,12 @@
 #!/bin/bash
 
-# skippeded 0.2-0.5 mutiple changes.
+# skipped 0.2-0.5 mutiple changes.
 #
-# 0.8.2, small fix in bind_dlz detection.
-# 
+# 0.9.0  Large fix in bind_dlz detection, the old way didn't work!
+#        plus numerous other changes by Rowland Penny
+#
 # Few improvements by Rowland Penny.
-# small corrections by Louis van Belle.
+# Small corrections by Louis van Belle.
 
 # This script helps with debugging problems when you report them on the samba list.
 # This really helps a lot in finding/helping with problems.
@@ -13,14 +14,13 @@
 # add the content in the mail. 
 
 # the script needs to run as root.
-if [ "$EUID" -ne 0 ]
-  then echo "Please run as root or with sudo. Exiting now..."
-  exit 1
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root or with sudo. Exiting now..."
+    exit 1
 fi
 
 kinit Administrator
- if [ "$?" -ge 1 ]
- then
+ if [ "$?" -ge 1 ]; then
      echo "Wrong password, exiting now. "
      exit 1
 fi
@@ -29,18 +29,22 @@ fi
 
 Check_file_exists () {
 if [ -e "${1}" ]; then
-    {
-    echo "Checking file: ${1} "
-    cat "${1}"
-    echo
-    echo "-----------"
-    } >> "$LOGFILE"
+    local FILE="$(cat "${1}")"
+    cat <<EOF >> "$LOGFILE"
+       Checking file: ${1}
+
+${FILE}
+
+-----------
+
+EOF
 else
-    {
-    echo "Warning, ${1} does not exist"
-    echo
-    echo "-----------"
-    }  >> "$LOGFILE"
+    cat <<EOF >> "$LOGFILE"
+    Warning, ${1} does not exist
+
+-----------
+
+EOF
 fi
 }
 
@@ -62,103 +66,150 @@ DOMAIN="$(hostname -d)"
 FQDN="$(hostname -f)"
 IP="$(hostname -I)"
 
-{
-echo "Hostname: ${HOSTNAME}"
-echo "DNS Domain: ${DOMAIN}"
-echo "FQDN: ${FQDN}"
-echo "ipaddress: ${IP}"
-echo
-echo "-----------"
-} >> $LOGFILE
+cat >> "$LOGFILE" <<EOF
+Hostname: ${HOSTNAME}
+DNS Domain: ${DOMAIN}
+FQDN: ${FQDN}
+ipaddress: ${IP}
 
-RUNNING=$(pgrep -xl 'samba|smbd|nmbd|winbindd')
-DC="no"
-NM="no"
-SM="no"
-WB="no"
-[[ "${RUNNING}" == *"samba"* ]] && DC="yes"
-[[ "${RUNNING}" == *"nmbd"* ]] && NM="yes"
-[[ "${RUNNING}" == *"smbd"* ]] && SM="yes"
-[[ "${RUNNING}" == *"winbind"* ]] && WB="yes"
+-----------
 
-if [ "$DC" = "yes" ]; then
-    if [ "$NM" = "yes" ]; then
-        echo "You are running Samba as DC, but nmbd is also running" >> $LOGFILE
-        echo "This is not allowed, please stop 'nmbd' from running" >> $LOGFILE
-    fi
+EOF
 
-    if [ "$SM" = "yes" ] && [ "$WB" = "yes" ]; then
-        echo "Samba is running as an AD DC" >> $LOGFILE
-        ROLE="ADDC"
-        ADDC=1
-        SMBCONF=$(samba -b | grep 'CONFIGFILE' | awk '{print $NF}')
-    fi
+DCOUNT=0
+for deamon in samba smbd nmbd winbindd
+do
+  pgrep -xl $deamon > /dev/null 2>&1
+  ret="$?"
+  case $ret in
+     1) continue
+       ;;
+     0) [[ $deamon == samba ]] && DCOUNT=$((DCOUNT+1))
+        [[ $deamon == smbd ]] && DCOUNT=$((DCOUNT+2))
+        [[ $deamon == nmbd ]] && DCOUNT=$((DCOUNT+3))
+        [[ $deamon == winbindd ]] && DCOUNT=$((DCOUNT+5))
+       ;; 
+  esac
+done
 
-    if [ "$SM" = "yes" ] && [ "$WB" = "no" ]; then
-	{
-        echo "Samba is running as an AD DC"
-        echo "'winbindd' is NOT running."
-        echo "Check that the winbind package is installed."
-	}  >> $LOGFILE
-        ROLE="ADDC"
-        ADDC=1
-        SMBCONF=$(samba -b | grep 'CONFIGFILE' | awk '{print $NF}')
-    fi
+case $DCOUNT in
+    0) cat >> "$LOGFILE" <<EOF
+Samba is not being run as a DC or a Unix domain member.
 
-else
-    if [ "$SM" = "yes" ] && [ "$NM" = "yes" ] && [ "$WB" = "yes" ]; then
-        ROLE=$(testparm -s --parameter-name='security' 2>/dev/null)
-        ROLE="${ROLE^^}"
-        if [ "$ROLE" = "ADS" ]; then
-            echo "Samba is running as a Unix domain member" >> $LOGFILE
-            UDM=1
-            SMBCONF=$(smbd -b | grep 'CONFIGFILE' | awk '{print $NF}')
-        fi
-    fi
-fi
+-----------
+EOF
+      ;;
+    1) cat >> "$LOGFILE" <<EOF
+Samba is being run as a DC, but neither the smbd or winbindd deamons or running.
 
+-----------
+EOF
+      ;;
+    2) cat >> "$LOGFILE" <<EOF
+Only the smbd deamon is running.
 
-if [ "$ADDC" = "0" ] && [ "$UDM" = "0" ]; then
-    echo "Samba is not being run as a DC or a Unix domain member." >> $LOGFILE
-fi
+-----------
+EOF
+      ;;
+    3) cat >> "$LOGFILE" <<EOF
+Samba is running as an AD DC but 'winbindd' is NOT running.
+Check that the winbind package is installed.
+EOF
+      ROLE="ADDC"
+      ADDC=1
+      SMBCONF=$(samba -b | grep 'CONFIGFILE' | awk '{print $NF}')
+      ;;
+    5) ROLE=$(testparm -s --parameter-name='security' 2>/dev/null)
+       ROLE="${ROLE^^}"
+       if [ "$ROLE" = "ADS" ]; then
+           cat >> "$LOGFILE" <<EOF
+Samba is running as an Unix domain member but 'winbindd' is NOT running.
+Check that the winbind package is installed.
+EOF
+           UDM=1
+           SMBCONF=$(smbd -b | grep 'CONFIGFILE' | awk '{print $NF}')
+       fi
+      ;;
+    7) ROLE=$(testparm -s --parameter-name='security' 2>/dev/null)
+       ROLE="${ROLE^^}"
+       if [ "$ROLE" = "ADS" ]; then
+           echo "Samba is running as a Unix domain member" >> $LOGFILE
+           UDM=1
+           SMBCONF=$(smbd -b | grep 'CONFIGFILE' | awk '{print $NF}')
+       fi
+      ;;
+    8) cat >> "$LOGFILE" <<EOF
+Samba is running as an AD DC
 
+-----------
+EOF
+       ROLE="ADDC"
+       ADDC=1
+       SMBCONF=$(samba -b | grep 'CONFIGFILE' | awk '{print $NF}')
+      ;;
+   10) ROLE=$(testparm -s --parameter-name='security' 2>/dev/null)
+       ROLE="${ROLE^^}"
+       if [ "$ROLE" = "ADS" ]; then
+           cat >> "$LOGFILE" <<EOF
+Samba is running as a Unix domain member
+
+-----------
+EOF
+           UDM=1
+           SMBCONF=$(smbd -b | grep 'CONFIGFILE' | awk '{print $NF}')
+       fi
+      ;;
+   11) cat >> "$LOGFILE" <<EOF
+You are running Samba as DC, but nmbd is also running
+This is not allowed, please stop 'nmbd' from running
+EOF
+      ;;
+esac
 
 Check_file_exists /etc/os-release
 echo >> $LOGFILE
-Check_file_exists /etc/debian_version
-# if this is Debian, no need to check for Devuan.
-if [ "$?" != "0" ]; then
-    # It isn't Debian, is it Devuan ?
-    Check_file_exists /etc/devuan_version
-    # TODO: add ubuntu checks
-    if [ "$?" != "0" ]; then
-        echo "This computer is not running either Devuan or Debian"
-        echo "This computer is not running either Devuan or Debian" >> $LOGFILE
-        echo "Cannot Continue...Exiting."
-        echo "Cannot Continue...Exiting." >> $LOGFILE
-        exit 1
+# Check for OS, Devuan, Debian, Ubuntu or other
+OS=$(uname -s)
+ARCH=$(uname -m)
+if [ "${OS}" = "Linux" ] ; then
+    if [ -f /etc/devuan_version ]; then
+        OSVER="Devuan $(cat /etc/devuan_version)"
+    elif [ -f /etc/lsb-release ]; then
+          . /etc/lsb-release
+          OSVER="$DISTRIB_DESCRIPTION"
+    elif [ -f /etc/debian_version ]; then
+          OSVER="Debian $(cat /etc/debian_version)"
+    else
+        OSVER="an unknown distribution"
     fi
+else
+    OSVER="an unknown distribution"
 fi
 
+cat >> "$LOGFILE" <<EOF
+This computer is running $OSVER $ARCH
 
-{
-# running ipnumbers
-echo "running command : ip a"
-ip a | grep -v forever
-echo "-----------"
-} >> $LOGFILE
+-----------
+EOF
+
+# checking IP numbers
+IP_DATA=$(ip a | grep -v forever)
+cat >> "$LOGFILE" <<EOF
+running command : ip a
+$IP_DATA
+
+-----------
+EOF
 
 Check_file_exists /etc/hosts
 Check_file_exists /etc/resolv.conf
 Check_file_exists /etc/krb5.conf
 Check_file_exists /etc/nsswitch.conf
-Check_file_exists /etc/idmapd.conf
 Check_file_exists "${SMBCONF}"
-
 
 USERMAP="$(grep "username map" "${SMBCONF}" | awk '{print $NF }')"
 # auto..
-if [ -n "${DC}" ]; then
+if [ "${ADDC}" -eq 1 ]; then
     SERVER_ROLE="$(samba-tool testparm -v --suppress-prompt | grep "server role"| cut -d"=" -f2)"
 else
     SERVER_ROLE="$(testparm -v -s | grep "server role"| cut -d"=" -f2)"
@@ -167,35 +218,57 @@ fi
 
 if [ -n "${USERMAP}" ]; then
     if [ "$UDM" = "1" ]; then
-        {
-         echo "Content of $USERMAP"
-         cat "$USERMAP"
-         echo
-         if [ "${SERVER_ROLE}" = "auto" ]; then
-             echo "Server Role is set to : $SERVER_ROLE"
-         fi
-         echo "-----------"
-         } >> $LOGFILE
-    else
-         {
-         if [ "$ADDC" = "1" ]; then
-             echo "You have a user.map set in your smb.conf"
-             echo "Samba is running as a DC"
-         fi
-         echo "-----------"
-         } >> $LOGFILE
+        MAPCONTENTS=$(cat "$USERMAP")
+        cat >> "$LOGFILE" <<EOF
+Running as Unix domain member and user.map detected.
+
+Contents of $USERMAP
+
+$MAPCONTENTS
+
+Server Role is set to : $SERVER_ROLE
+
+-----------
+EOF
+    elif [ "$ADDC" = "1" ]; then
+          cat >> "$LOGFILE" <<EOF
+You have a user.map set in your smb.conf
+This is not allowed because Samba is running as a DC
+
+-----------
+EOF
     fi
 else
-    {
-    echo "No username map detected."
-    echo
-    echo "-----------"
-    } >> $LOGFILE
+    if [ "$UDM" = "1" ]; then
+        cat >> "$LOGFILE" <<EOF
+Running as Unix domain member and no user.map detected.
+
+-----------
+EOF
+   fi
 fi
+
 if [ "$ADDC" = "1" ]; then
     found=0
     # check for bind9_dlz
-    if [ "$(grep -c "\-dns" "${SMBCONF}")" -eq "1" ] || [ "$(grep "server services" "${SMBCONF}" | grep -wc '\-dns')" -eq "1" ]; then
+    if [ $(grep -c 'server services' /etc/samba/smb.conf) -eq 0 ]; then
+        DNS_SERVER='internal'
+    else
+        # could be using Bind9
+        SERVICES=$(grep "server services" "${SMBCONF}")
+        SERVER='dns'
+        dnscount=${SERVICES//"$SERVER"}
+        if [ $(echo "$SERVICES" | grep -c "\-dns") -eq 1 ]; then
+            DNS_SERVER='bind9'
+        elif [ $(((${#SERVICES} - ${#dnscount}) / ${#SERVER})) -eq 1 ]; then
+              DNS_SERVER='bind9'
+        elif [ $(((${#SERVICES} - ${#dnscount}) / ${#SERVER})) -eq 2 ]; then
+              DNS_SERVER='internal'
+        fi
+    fi
+
+
+    if [ "$DNS_SERVER" = 'bind9' ]; then
         echo "Detected bind DLZ enabled.." >> $LOGFILE
         if [ -d /etc/bind ]; then
 
@@ -216,49 +289,52 @@ if [ "$ADDC" = "1" ]; then
                   found=$((found + 1))
               fi
 
-            if [ "${found}" -gt 0 ]; then
-                {
-                echo >> $LOGFILE
-                echo "ERRROR: AD DC zones found in the Bind flat-files" >> $LOGFILE
-                echo "This is not allowed, you must remove them." >> $LOGFILE
-                echo >> $LOGFILE
-                echo "-----------" >> $LOGFILE
-                } >> $LOGFILE
-            else
-                echo "zone : ${zone} ok, no Bind flat-files found" >> $LOGFILE
-            fi
+              if [ "${found}" -gt 0 ]; then
+                  cat >> "$LOGFILE" <<EOF
+
+ERROR: AD DC zones found in the Bind flat-files
+       This is not allowed, you must remove them.
+
+-----------
+EOF
+              else
+                  cat >> "$LOGFILE" <<EOF
+zone : ${zone} ok, no Bind flat-files found
+-----------
+EOF
+              fi
             done <<< "${zones}"
         else
-            {
-            echo >> $LOGFILE
-            echo "Warning, detected bind enabled in smb.conf, but no /etc/bind directory found" >> $LOGFILE
-            echo " " >> $LOGFILE
-            echo "-----------" >> $LOGFILE
-            } >> $LOGFILE
+            cat >> "$LOGFILE" <<EOF
+
+Warning, detected bind is enabled in smb.conf, but no /etc/bind directory found
+
+-----------
+EOF
         fi
     else
-        echo "No bind_DLZ detected in smb.conf" >> $LOGFILE
-        echo "--------------------------------------"  >> $LOGFILE
+        cat >> "$LOGFILE" <<EOF
+BIND_DLZ not detected in smb.conf
+
+-----------
+EOF
     fi
 fi
 
 # Where is the 'smbd' binary ?
 SBINDIR="$(smbd -b | grep 'SBINDIR'  | awk '{ print $NF }')"
 if [ "${SBINDIR}" = "/usr/sbin" ]; then
-   {
-    echo
-    echo "Installed packages, running: dpkg -l | egrep \"$CHECK_PACKAGES1\""
-    dpkg -l | egrep "$CHECK_PACKAGES1"
-    echo "-----------"
-   } >> $LOGFILE
+    running=$(dpkg -l | egrep "$CHECK_PACKAGES1")
 else
-   {
-    echo "Self compiled Samba installed."
-    echo "Installed packages, running: dpkg -l | egrep \"$CHECK_PACKAGES2\""
-    dpkg -l | egrep "$CHECK_PACKAGES2"
-    echo "-----------"
-   } >> $LOGFILE
+    running=$(dpkg -l | egrep "$CHECK_PACKAGES2")
 fi
+    cat >> "$LOGFILE" <<EOF
+
+Installed packages:
+$running
+
+-----------
+EOF
 
 echo "The debug info about your system can be found in this file: $LOGFILE"
 echo "Please check this and if required, sanitise it."
@@ -266,3 +342,4 @@ echo "Then copy & paste it into an  email to the samba list"
 echo "Do not attach it to the email, the Samba mailing list strips attachments."
 
 exit 0
+
