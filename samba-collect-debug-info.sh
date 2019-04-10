@@ -1,12 +1,9 @@
 #!/bin/bash
 
-# skipped 0.2-0.5 mutiple changes.
+# d.d. 10 april 2019 
+# 0.10   Fix detecting winbind, added idmap.conf detection, updated check packages installed.
 #
-# 0.9.0  Large fix in bind_dlz detection, the old way didn't work!
-#        plus numerous other changes by Rowland Penny
-#
-# Few improvements by Rowland Penny.
-# Small corrections by Louis van Belle.
+# Created and maintained by Rowland Penny and Louis van Belle.
 
 # This script helps with debugging problems when you report them on the samba list.
 # This really helps a lot in finding/helping with problems.
@@ -51,8 +48,7 @@ fi
 ############# Code
 
 LOGFILE="/tmp/samba-debug-info.txt"
-CHECK_PACKAGES1="samba|winbind|krb5|smb|acl|attr"
-CHECK_PACKAGES2="krb5|acl|attr"
+CHECK_PACKAGES1="samba|winbind|krb5|smbclient|acl|attr"
 ADDC=0
 UDM=0
 
@@ -205,6 +201,7 @@ Check_file_exists /etc/hosts
 Check_file_exists /etc/resolv.conf
 Check_file_exists /etc/krb5.conf
 Check_file_exists /etc/nsswitch.conf
+Check_file_exists /etc/idmap.conf
 Check_file_exists "${SMBCONF}"
 
 USERMAP="$(grep "username map" "${SMBCONF}" | awk '{print $NF }')"
@@ -326,7 +323,7 @@ SBINDIR="$(smbd -b | grep 'SBINDIR'  | awk '{ print $NF }')"
 if [ "${SBINDIR}" = "/usr/sbin" ]; then
     running=$(dpkg -l | egrep "$CHECK_PACKAGES1")
 else
-    running=$(dpkg -l | egrep "$CHECK_PACKAGES2")
+    running=$(dpkg -l | egrep "$CHECK_PACKAGES1")
 fi
     cat >> "$LOGFILE" <<EOF
 
