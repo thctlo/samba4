@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# d.d. 10 april 2019 
-# 0.10   Fix detecting winbind, added idmap.conf detection, updated check packages installed.
+# d.d. 10 april 2019
+# 0.10.1   Fix detecting winbind, added idmapd.conf detection, updated check packages installed.
 #
 # Created and maintained by Rowland Penny and Louis van Belle.
 
 # This script helps with debugging problems when you report them on the samba list.
 # This really helps a lot in finding/helping with problems.
-# Dont attacht this in an e-mail the samba list wil strip of, 
-# add the content in the mail. 
+# Dont attacht this in an e-mail the samba list wil strip of,
+# add the content in the mail.
 
 # the script needs to run as root.
 if [ "$EUID" -ne 0 ]; then
@@ -57,7 +57,7 @@ echo "Please wait, collecting debug info."
 echo "Collected config  --- $(date +%Y-%m-%d-%H:%M) -----------" > $LOGFILE
 echo >> $LOGFILE
 
-HOSTNAME="$(hostname -s)" 
+HOSTNAME="$(hostname -s)"
 DOMAIN="$(hostname -d)"
 FQDN="$(hostname -f)"
 IP="$(hostname -I)"
@@ -84,7 +84,7 @@ do
         [[ $deamon == smbd ]] && DCOUNT=$((DCOUNT+2))
         [[ $deamon == nmbd ]] && DCOUNT=$((DCOUNT+3))
         [[ $deamon == winbindd ]] && DCOUNT=$((DCOUNT+5))
-       ;; 
+       ;;
   esac
 done
 
@@ -123,7 +123,17 @@ Samba is running as an Unix domain member but 'winbindd' is NOT running.
 Check that the winbind package is installed.
 EOF
            UDM=1
-           SMBCONF=$(smbd -b | grep 'CONFIGFILE' | awk '{print $NF}')
+           if [ -f /usr/sbin/smbd ]
+           then
+                SMBCONF=$(smbd -b | grep 'CONFIGFILE' | awk '{print $NF}')
+            elif [ -f $(which wbinfo) ]
+              then
+                if [ -e /etc/samba/smb.conf ]
+                then
+                    echo "Detected, Samba is running winbind only. Auth-only server, Unix domain member" >> $LOGFILE
+                    SMBCONF=/etc/samba/smb.conf
+                fi
+           fi
        fi
       ;;
     7) ROLE=$(testparm -s --parameter-name='security' 2>/dev/null)
@@ -201,7 +211,7 @@ Check_file_exists /etc/hosts
 Check_file_exists /etc/resolv.conf
 Check_file_exists /etc/krb5.conf
 Check_file_exists /etc/nsswitch.conf
-Check_file_exists /etc/idmap.conf
+Check_file_exists /etc/idmapd.conf
 Check_file_exists "${SMBCONF}"
 
 USERMAP="$(grep "username map" "${SMBCONF}" | awk '{print $NF }')"
@@ -213,7 +223,7 @@ else
 fi
 
 
-if [ -n "${USERMAP}" ]; then
+if [ -e "${USERMAP}" ]; then
     if [ "$UDM" = "1" ]; then
         MAPCONTENTS=$(cat "$USERMAP")
         cat >> "$LOGFILE" <<EOF
@@ -239,7 +249,7 @@ else
     if [ "$UDM" = "1" ]; then
         cat >> "$LOGFILE" <<EOF
 Running as Unix domain member and no user.map detected.
-
+This is possible with an auth-only setup.
 -----------
 EOF
    fi
@@ -319,13 +329,12 @@ EOF
 fi
 
 # Where is the 'smbd' binary ?
-SBINDIR="$(smbd -b | grep 'SBINDIR'  | awk '{ print $NF }')"
-if [ "${SBINDIR}" = "/usr/sbin" ]; then
-    running=$(dpkg -l | egrep "$CHECK_PACKAGES1")
-else
-    running=$(dpkg -l | egrep "$CHECK_PACKAGES1")
-fi
-    cat >> "$LOGFILE" <<EOF
+#if [ -f /usr/sbin/smbd ]
+#then
+#SBINDIR="$(smbd -b | grep 'SBINDIR'  | awk '{ print $NF }')"
+
+running=$(dpkg -l | egrep "$CHECK_PACKAGES1")
+cat >> "$LOGFILE" <<EOF
 
 Installed packages:
 $running
@@ -339,4 +348,3 @@ echo "Then copy & paste it into an  email to the samba list"
 echo "Do not attach it to the email, the Samba mailing list strips attachments."
 
 exit 0
-
