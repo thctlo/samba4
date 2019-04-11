@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# d.d. 10 april 2019
-# 0.10.1   Fix detecting winbind, added idmapd.conf detection, updated check packages installed.
+# d.d. 11 april 2019
+# 0.11   Added NFS detection in Auth-only member setups.
 #
 # Created and maintained by Rowland Penny and Louis van Belle.
 
@@ -211,7 +211,7 @@ Check_file_exists /etc/hosts
 Check_file_exists /etc/resolv.conf
 Check_file_exists /etc/krb5.conf
 Check_file_exists /etc/nsswitch.conf
-Check_file_exists /etc/idmapd.conf
+
 Check_file_exists "${SMBCONF}"
 
 USERMAP="$(grep "username map" "${SMBCONF}" | awk '{print $NF }')"
@@ -249,9 +249,12 @@ else
     if [ "$UDM" = "1" ]; then
         cat >> "$LOGFILE" <<EOF
 Running as Unix domain member and no user.map detected.
-This is possible with an auth-only setup.
+This is possible with an auth-only setup, checking also for NFS parts
 -----------
 EOF
+# check if nfs is used and idmapd.conf exits.
+Check_file_exists /etc/idmapd.conf
+CHECK_PACKAGES1="samba|winbind|krb5|smbclient|acl|attr|nfs"
    fi
 fi
 
