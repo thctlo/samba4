@@ -94,8 +94,8 @@ KEEP_DAY2="15"
 # the commando's this scripts need. 
 SCRIPT_COMMANDS="echo samba tdbbackup logger tar dirname cat grep awk sed date find rm getfacl tail cut wc awk sort"
 
-# the location for the command file
-SCRIPT_COMMANDS_FILE="/etc/samba/bin/backup_samba4_commands"
+# The location for the command file, make sure that folder exists.
+SCRIPT_COMMANDS_FILE="/etc/samba/backup_samba4_commands"
 
 # what to backup of samba, this should normaly not be needed to change.
 DIRS="private sysvol samba"
