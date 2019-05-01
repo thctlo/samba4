@@ -4,7 +4,7 @@
 #
 # As of 14 Nov 2018, you can use this with the new ubuntu 18.04 repo. ( info below in this file. ) 
 # The ubuntu bionic  for samba 4.9 repo contains all needed ubuntu packages.
-# You can use the Debian Stretch samba 4.8 packages also on ubuntu 18.04 but you better use the 4.9 repo for ubuntu.
+# You can use the Debian Stretch samba 4.8 packages also on ubuntu 18.04 but you better use the 4.9+ repo for ubuntu.
 
 This should be a good base to start with as howto for Ubuntu 18.04 systemd based. 
 
@@ -297,6 +297,23 @@ echo "# Samba4 DLZ and Active Directory Zones (default source installation)
 # add the ntp part to apparmor
 echo "# samba4 ntp signing socket
 /var/lib/samba/ntp_signd/socket rw," >> /etc/apparmor.d/local/usr.sbin.ntpd
+
+# Added : 1-may2-2019 NTPD fix for apparmor. 
+# NTPD fix. 
+echo "
+  # To sign replies to MS-SNTP clients by the smbd daemon /var/lib/samba
+  /var/lib/samba/ntp_signd r,
+  /var/lib/samba/ntp_signd/{,*} rw,
+
+  # samba4 winbindd pipe 
+  /{,var/}run/samba/winbindd r,
+  /{,var/}run/samba/winbindd/pipe rw,
+
+  # samba4 winbindd privileged pipe ? Needed? 
+  /var/lib/samba/winbindd r,
+  /var/lib/samba/winbindd/pipe rw,
+
+" >> /etc/apparmor.d/local/usr.sbin.ntpd
 
 ---------------------
 Correct the resolving. 
