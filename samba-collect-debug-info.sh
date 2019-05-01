@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# d.d. 11 april 2019
-# 0.11   Added NFS detection in Auth-only member setups.
+# d.d. 1 may 2019
+# 0.12   Added systemd-resolved stube setting (nameserver 127.0.0.53)
 #
 # Created and maintained by Rowland Penny and Louis van Belle.
 
@@ -209,6 +209,18 @@ EOF
 
 Check_file_exists /etc/hosts
 Check_file_exists /etc/resolv.conf
+grep "127.0.0.53" /etc/resolv.conf
+if [ "$?" -ge 1 ]; then
+    cat >> "$LOGFILE" <<EOF
+    systemd stub resolver detected, running command : systemd-resolve --status
+    -----------
+    EOF
+    systemd-resolve --status >> "$LOGFILE"
+    cat >> "$LOGFILE" <<EOF
+    -----------
+    EOF
+fi
+
 Check_file_exists /etc/krb5.conf
 Check_file_exists /etc/nsswitch.conf
 
