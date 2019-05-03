@@ -367,7 +367,7 @@ network:
       addresses: [ 192.168.0.10/24 ]
       gateway4: 192.168.0.1
       nameservers:
-          search: [ internal.example.com ]
+          search: [ internal.example.com ] <<<< your primary DNS domain. ( hostname -d )
           addresses: [ 192.168.0.10 ]		<<<< IP OF THE AD-DC. 
 
 When this is set run the following.
