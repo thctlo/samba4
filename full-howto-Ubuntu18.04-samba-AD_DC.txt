@@ -127,9 +127,10 @@ And check if it works
 nslookup www.google.com
 
 Add my (Debian) repo
-There is now a ubuntu repo for 4.9.x
+There is now a ubuntu repo for 4.9.x (bionic-samba49) / 4.10.x (bionic-samba410) 
 echo "deb http://apt.van-belle.nl/debian bionic-samba49 main contrib non-free" | sudo tee -a /etc/apt/sources.list.d/van-belle.list
-Or for the 4.8.x, use the debian stretch repo.
+
+Or for the 4.8.x, use the debian stretch repo, but i suggest, move up to 4.9 or 4.10.
 echo "deb http://apt.van-belle.nl/debian stretch-samba48 main contrib non-free" | sudo tee -a /etc/apt/sources.list.d/van-belle.list
 wget -O - http://apt.van-belle.nl/louis-van-belle.gpg-key.asc | apt-key add -
 apt update -y
