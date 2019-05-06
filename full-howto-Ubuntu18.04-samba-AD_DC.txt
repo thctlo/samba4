@@ -5,6 +5,7 @@
 # As of 14 Nov 2018, you can use this with the new ubuntu 18.04 repo. ( info below in this file. ) 
 # The ubuntu bionic  for samba 4.9 repo contains all needed ubuntu packages.
 # You can use the Debian Stretch samba 4.8 packages also on ubuntu 18.04 but you better use the 4.9+ repo for ubuntu.
+# and yes you can use the following also with the supplied packages of Ubuntu 18.04. 
 
 This should be a good base to start with as howto for Ubuntu 18.04 systemd based. 
 
@@ -208,9 +209,7 @@ systemctl enable samba-ad-dc
 ---------------------
 Setup NTP
 cp /etc/ntp.conf{,.backup}
-mkdir -p /var/lib/samba/ntp_signd/
-chmod 750 /var/lib/samba/ntp_signd
-chown root:ntp /var/lib/samba/ntp_signd
+install -d /var/lib/samba/ntp_signd -m 750 -u root -g ntp
 
 cat << EOF >> /etc/ntp.conf
 #
@@ -271,24 +270,39 @@ cp -r /etc/bind{,.backup}
 sed -i 's[// forwarders[forwarders[g' /etc/bind/named.conf.options
 sed -i "s[// \t0.0.0.0;[      8.8.8.8; 8.8.4.4;[g" /etc/bind/named.conf.options
 sed -i "s[// };[};[g" /etc/bind/named.conf.options
+# NOTE, if you samba is 4.8 or lower, use : 
 sed -i "/listen-on-v6/a \        tkey-gssapi-keytab \"/var/lib/samba/private/dns.keytab\";" /etc/bind/named.conf.options
 sed -i "/tkey-gssapi-keytab/i \        // DNS dynamic updates via Kerberos "/var/lib/samba/private/dns.keytab";" /etc/bind/named.conf.options
+echo "// adding the Samba dlopen ( Bind DLZ ) module
+include \"/var/lib/samba/private/named.conf\";" >> /etc/bind/named.conf.local
+
+# samba 4.9 and up use :
+sed -i "/listen-on-v6/a \        tkey-gssapi-keytab \"/var/lib/samba/bind-dns/dns.keytab\";" /etc/bind/named.conf.options
+sed -i "/tkey-gssapi-keytab/i \        // DNS dynamic updates via Kerberos "/var/lib/samba/bind-dns/dns.keytab";" /etc/bind/named.conf.options
+echo "// adding the Samba dlopen ( Bind DLZ ) module
+include \"/var/lib/samba/bind-dns/named.conf\";" >> /etc/bind/named.conf.local
+
 sed -i "/listen-on-v6/a \        notify no;" /etc/bind/named.conf.options
 sed -i "/notify no/a        empty-zones-enable no;" /etc/bind/named.conf.options
 
-Please note, check if :  auth-nxdomain yes;  if enabled, you need yes to the new samba backup onnline tool.
-
-echo "// adding the Samba dlopen ( Bind DLZ ) module
-include \"/var/lib/samba/private/named.conf\";" >> /etc/bind/named.conf.local
+# Please note, You need yes to use new samba backup online tool also.
+sed -i "s/auth-nxdomain no/auth-nxdomain yes/g" /etc/bind/named.conf.options
 
 
 As of this part, apparmor, this might need more optimizing but this works.
 echo "# Samba4 DLZ and Active Directory Zones (default source installation)
-/var/lib/samba/lib/** rm,
+# bind support before samba 4.9
 /var/lib/samba/private/dns/** rwmk,
 /var/lib/samba/private/dns.keytab r,
 /var/lib/samba/private/named.conf r,
 /var/lib/samba/private/dns/** rwk,
+# bind support after samba 4.9
+/var/lib/samba/bind-dns/** rwmk,
+/var/lib/samba/bind-dns/dns.keytab r,
+/var/lib/samba/bind-dns/named.conf r,
+/var/lib/samba/bind-dns/dns/** rwk,
+# Regular samba. 
+/var/lib/samba/lib/** rm,
 /usr/lib/**/samba/bind9/** rmk,
 /usr/lib/**/samba/gensec/* rmk,
 /usr/lib/**/samba/ldb/** rmk,
@@ -296,7 +310,7 @@ echo "# Samba4 DLZ and Active Directory Zones (default source installation)
 /var/tmp/** rwmk," >> /etc/apparmor.d/local/usr.sbin.named
 
 # add the ntp part to apparmor
-echo "# To sign replies to MS-SNTP clients by the smbd daemon /var/lib/samba
+echo "# To sign replies to MS-SNTP clients by the NTP daemon in /var/lib/samba
 /var/lib/samba/ntp_signd/socket rw,
 " >> /etc/apparmor.d/local/usr.sbin.ntpd
 
