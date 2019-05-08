@@ -1,9 +1,11 @@
 #!/bin/bash
 
-# d.d. 1 may 2019
-# 0.12   Added systemd-resolved stube setting (nameserver 127.0.0.53)
+# d.d. 8 may 2019
+# 0.15   Fixed systemd-resolved stube setting (nameserver 127.0.0.53)
+# 		 Fixed typos.
 #
 # Created and maintained by Rowland Penny and Louis van Belle.
+# questions, ask them in the samba list. 
 
 # This script helps with debugging problems when you report them on the samba list.
 # This really helps a lot in finding/helping with problems.
@@ -16,8 +18,10 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Initialize the Adminsitrator
 kinit Administrator
- if [ "$?" -ge 1 ]; then
+
+if [ "$?" -ge 1 ]; then
      echo "Wrong password, exiting now. "
      exit 1
 fi
@@ -210,15 +214,22 @@ EOF
 Check_file_exists /etc/hosts
 Check_file_exists /etc/resolv.conf
 grep "127.0.0.53" /etc/resolv.conf
-if [ "$?" -ge 1 ]; then
+if [ "$?" -eq 0 ]; then
+
     cat >> "$LOGFILE" <<EOF
-    systemd stub resolver detected, running command : systemd-resolve --status
-    -----------
-    EOF
-    systemd-resolve --status >> "$LOGFILE"
-    cat >> "$LOGFILE" <<EOF
-    -----------
-    EOF
+systemd stub resolver detected, running command : systemd-resolve --status
+-----------
+EOF
+    STUBERES=1
+fi
+if [ $STUBERES = 1 ]
+then
+systemd-resolve --status >> "$LOGFILE"
+cat >> "$LOGFILE" <<EOF
+
+-------resolv.conf end----
+
+EOF
 fi
 
 Check_file_exists /etc/krb5.conf
@@ -238,7 +249,7 @@ fi
 if [ -e "${USERMAP}" ]; then
     if [ "$UDM" = "1" ]; then
         MAPCONTENTS=$(cat "$USERMAP")
-        cat >> "$LOGFILE" <<EOF
+        cat >> "$LOGFILE" << EOF
 Running as Unix domain member and user.map detected.
 
 Contents of $USERMAP
@@ -343,10 +354,21 @@ EOF
     fi
 fi
 
+
+# Todo
+# checking for extra includes.
+#if [ -e "/etc/bind/named.conf.local" ]
+#then
+#    for ExtraIncludes in $(grep "include \"\/" /etc/bind/named.conf.local)
+#    do
+#    ..
+#fi
+
 # Where is the 'smbd' binary ?
 #if [ -f /usr/sbin/smbd ]
 #then
 #SBINDIR="$(smbd -b | grep 'SBINDIR'  | awk '{ print $NF }')"
+# TODO..add more checks..
 
 running=$(dpkg -l | egrep "$CHECK_PACKAGES1")
 cat >> "$LOGFILE" <<EOF
@@ -361,5 +383,8 @@ echo "The debug info about your system can be found in this file: $LOGFILE"
 echo "Please check this and if required, sanitise it."
 echo "Then copy & paste it into an  email to the samba list"
 echo "Do not attach it to the email, the Samba mailing list strips attachments."
+
+# Remove Administrators kerberos ticket.
+kdestroy
 
 exit 0
