@@ -328,6 +328,7 @@ if [ "$ADDC" = "1" ]; then
 ERROR: AD DC zones found in the Bind flat-files
        This is not allowed, you must remove them.
        Conflicting zone name : ${zone}
+       File in question is : ${zonetest}
 -----------
 EOF
               else
