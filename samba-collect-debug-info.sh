@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # d.d. 9 may 2019
-# 0.16   Better message in AD zones with bind9 flat files, which is not allowed.
+# 0.19   Filter out *.dpkg-dist files in /etc/bind zone detection.
 # 		 
 #
 # Created and maintained by Rowland Penny and Louis van Belle.
@@ -317,7 +317,7 @@ if [ "$ADDC" = "1" ]; then
             zones="$(echo "${zonelist}" | grep '[p]szZoneName' | awk '{print $NF}' | tr '\n' ' ')"
             while read -r -d ' ' zone
             do
-              zonetest=$(grep -r "${zone}" /etc/bind)
+              zonetest=$(grep -r "${zone}" /etc/bind|grep -v dpkg-dist)
               if [ -n "${zonetest}" ]; then
                   found=$((found + 1))
               fi
