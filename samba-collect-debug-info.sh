@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# d.d. 8 may 2019
-# 0.15   Fixed systemd-resolved stube setting (nameserver 127.0.0.53)
-# 		 Fixed typos.
+# d.d. 9 may 2019
+# 0.16   Better message in AD zones with bind9 flat files, which is not allowed.
+# 		 
 #
 # Created and maintained by Rowland Penny and Louis van Belle.
 # questions, ask them in the samba list. 
@@ -327,7 +327,7 @@ if [ "$ADDC" = "1" ]; then
 
 ERROR: AD DC zones found in the Bind flat-files
        This is not allowed, you must remove them.
-
+       Conflicting zone name : ${zone}
 -----------
 EOF
               else
