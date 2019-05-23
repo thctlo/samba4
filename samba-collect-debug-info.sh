@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # d.d. 23 may 2019
-# 0.19.1   Fix systemd stub detection. 
+# 0.20   Added better bind detection, missed the packages.
 # 		 
 #
 # Created and maintained by Rowland Penny and Louis van Belle.
@@ -304,7 +304,8 @@ if [ "$ADDC" = "1" ]; then
     if [ "$DNS_SERVER" = 'bind9' ]; then
         echo "Detected bind DLZ enabled.." >> $LOGFILE
         if [ -d /etc/bind ]; then
-
+            CHECK_PACKAGES1="${CHECK_PACKAGES1}|bind9"
+            
             Check_file_exists "/etc/bind/named.conf"
             Check_file_exists "/etc/bind/named.conf.options"
             Check_file_exists "/etc/bind/named.conf.local"
