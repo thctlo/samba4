@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# d.d. 9 may 2019
-# 0.19   Filter out *.dpkg-dist files in /etc/bind zone detection.
+# d.d. 23 may 2019
+# 0.19.1   Fix systemd stub detection. 
 # 		 
 #
 # Created and maintained by Rowland Penny and Louis van Belle.
@@ -222,7 +222,7 @@ systemd stub resolver detected, running command : systemd-resolve --status
 EOF
     STUBERES=1
 fi
-if [ $STUBERES = 1 ]
+if [ "${STUBERES}" = 1 ]
 then
 systemd-resolve --status >> "$LOGFILE"
 cat >> "$LOGFILE" <<EOF
