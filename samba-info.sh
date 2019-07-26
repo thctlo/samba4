@@ -107,10 +107,10 @@ echo "The Kerberos REALM name used  = ${SAMBA_KERBEROS_NAME}	(kinit and /etc/krb
 
 if [ -z "${SAMBA_DC2}" ]; then
     SAMBA_DC1_IP=$(host -t A ${SAMBA_DC1} | awk '{print $NF}')
-    echo "The Ipadres of DC ${SAMBA_DC1}        = ${SAMBA_DC1_IP}"
+    echo "The IP address of DC ${SAMBA_DC1}        = ${SAMBA_DC1_IP}"
 else
     SAMBA_DC1_IP=$(host -t A ${SAMBA_DC1} | awk '{print $NF}')
     SAMBA_DC2_IP=$(host -t A ${SAMBA_DC2} | awk '{print $NF}')
-    echo "The Ipadres of DC ${SAMBA_DC1}        = ${SAMBA_DC1_IP}"
-    echo "The Ipadres of DC ${SAMBA_DC2}        = ${SAMBA_DC2_IP}"
+    echo "The IP address of DC ${SAMBA_DC1}        = ${SAMBA_DC1_IP}"
+    echo "The IP address of DC ${SAMBA_DC2}        = ${SAMBA_DC2_IP}"
 fi
