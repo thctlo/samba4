@@ -60,6 +60,7 @@
 #    - make keep_day work, in test now.
 # Revised 2017-12-19, Louis van Belle, Thanks Norbert Hanke.:
 #    - Fixed detection of samba/etc with a self compiled samba.
+# Revised 2019-08-01, Louis van Belle, Thanks Norbert Hanke.:
 ##
 
 #       Used format in the backup file names.
@@ -195,9 +196,8 @@ fi
 if [ ! -d $STOREDIR ]; then
     ${DEBUG} "Missing backup directory $STOREDIR"
     ${DEBUG} "Will now create it."
-    mkdir -p $STOREDIR
+    install -d "${STOREDIR}" -o root -g staff -m 660
 fi
-
 
 # get where the directory that holds smb.conf is stored
 CONFBASE=$(${CMD_SAMBA} -b | ${CMD_GREP} [C]ONFIGFILE | ${CMD_AWK} '{print $NF}' | ${CMD_AWK} -F '/' '{print $2}')
