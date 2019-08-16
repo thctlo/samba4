@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# d.d. 23 may 2019
-# 0.20   Added better bind detection, missed the packages.
-# 		 
+# d.d. 16 Aug 2019
+# 0.21   Added kerberos REALM detection before kinit when starting the script.
 #
 # Created and maintained by Rowland Penny and Louis van Belle.
 # questions, ask them in the samba list. 
@@ -18,11 +17,96 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Only this one is changeable. 
+LOGFILE="/tmp/samba-debug-info.txt"
+
+# Dont change below here.
+CHECK_PACKAGES1="samba|winbind|krb5|smbclient|acl|attr"
+ADDC=0
+UDM=0
+
+echo "Please wait, collecting debug info."
+
+echo "Collected config  --- $(date +%Y-%m-%d-%H:%M) -----------" > $LOGFILE
+echo " "
+echo >> $LOGFILE
+
+HOSTNAME="$(hostname -s)"
+DOMAIN="$(hostname -d)"
+FQDN="$(hostname -f)"
+IP="$(hostname -I)"
+
+# Base info.
+cat >> "$LOGFILE" <<EOF
+Hostname: ${HOSTNAME}
+DNS Domain: ${DOMAIN}
+FQDN: ${FQDN}
+ipaddress: ${IP}
+
+-----------
+
+EOF
+
+# Test of there are _kerberos._tcp records.
+nslookup -type=SRV _kerberos._tcp."${DOMAIN}" > /dev/null
+if [ "${?}" -ge 1 ]
+then
+    {
+    echo "WARNING: kinit Administrator will fail and this needs to be fixed first."
+    echo "unable to verify DNS kerberos._tcp SRV records"
+    echo " "
+    echo "$(nslookup -type=SRV _kerberos._tcp.${DOMAIN})"
+    }  >> $LOGFILE
+    exit 1
+else
+    {
+    echo "Kerberos SRV _kerberos._tcp.${DOMAIN} record verified ok, sample output: "
+    echo "$(nslookup -type=SRV _kerberos._tcp.${DOMAIN})"
+    }  >> $LOGFILE
+fi
+
+for x in $(nslookup -type=NS "${DOMAIN}"|grep nameserver |awk -F"=" '{ print $NF }'  >/dev/null)
+do
+    nslookup -type=SRV _kerberos._tcp."${DOMAIN}" "${x}" > /dev/null
+    if [ "$?" -ge 1 ]
+    then
+	{ 
+	echo "Error detecting $x nameserver it's _kerberos._tcp.${DOMAIN} records"
+	echo " "
+	$(nslookup -type=NS "${DOMAIN}"|grep nameserver |awk -F"=" '{ print $NF }')
+	}  >> $LOGFILE
+    else
+	{ 
+	echo "DNS NS records for the nameservers: ${x} in domain ${DOMAIN} verified ok"
+	$(nslookup -type=NS "${DOMAIN}"|grep nameserver |awk -F"=" '{ print $NF }')
+	}  >> $LOGFILE
+    fi
+done
+
+if [ ! -f /etc/krb5.conf ]
+then 
+    echo "Warning, missing krb5.conf, is krb5-user installed?"
+    echo "exiting script, please check : dpkg -s krb5-user |grep -i status "
+    echo "If its is missing/not installed, run apt install krb5-user"
+    echo "The debian defaults work fine and all you need it : "
+    echo ""
+    echo "[libdefaults]"
+    echo "	default_realm = ${DOMAIN^^}"
+    echo "	dns_lookup_kdc = true"
+    echo "	dns_lookup_realm = false"
+    echo ""
+    echo "The other settings are the defaults."
+    echo ""
+    echo "-----------"
+    echo ""
+    exit 1
+fi
+
 # Initialize the Adminsitrator
 kinit Administrator
-
-if [ "$?" -ge 1 ]; then
-     echo "Wrong password, exiting now. "
+if [ "$?" -ge 1 ]
+then
+     echo "Wrong password or kerberos REALM problems, exiting now. "
      exit 1
 fi
 ################ Functions
@@ -51,31 +135,9 @@ fi
 
 ############# Code
 
-LOGFILE="/tmp/samba-debug-info.txt"
-CHECK_PACKAGES1="samba|winbind|krb5|smbclient|acl|attr"
-ADDC=0
-UDM=0
 
-echo "Please wait, collecting debug info."
 
-echo "Collected config  --- $(date +%Y-%m-%d-%H:%M) -----------" > $LOGFILE
-echo >> $LOGFILE
-
-HOSTNAME="$(hostname -s)"
-DOMAIN="$(hostname -d)"
-FQDN="$(hostname -f)"
-IP="$(hostname -I)"
-
-cat >> "$LOGFILE" <<EOF
-Hostname: ${HOSTNAME}
-DNS Domain: ${DOMAIN}
-FQDN: ${FQDN}
-ipaddress: ${IP}
-
------------
-
-EOF
-
+# 
 DCOUNT=0
 for deamon in samba smbd nmbd winbindd
 do
@@ -130,7 +192,7 @@ EOF
            if [ -f /usr/sbin/smbd ]
            then
                 SMBCONF=$(smbd -b | grep 'CONFIGFILE' | awk '{print $NF}')
-            elif [ -f $(which wbinfo) ]
+            elif [ -f "$(command -v wbinfo)" ]
               then
                 if [ -e /etc/samba/smb.conf ]
                 then
@@ -140,7 +202,7 @@ EOF
            fi
        fi
       ;;
-    7) ROLE=$(testparm -s --parameter-name='security' 2>/dev/null)
+    7) ROLE="$(testparm -s --parameter-name='security' 2>/dev/null)"
        ROLE="${ROLE^^}"
        if [ "$ROLE" = "ADS" ]; then
            echo "Samba is running as a Unix domain member" >> $LOGFILE
@@ -157,7 +219,7 @@ EOF
        ADDC=1
        SMBCONF=$(samba -b | grep 'CONFIGFILE' | awk '{print $NF}')
       ;;
-   10) ROLE=$(testparm -s --parameter-name='security' 2>/dev/null)
+   10) ROLE="$(testparm -s --parameter-name='security' 2>/dev/null)"
        ROLE="${ROLE^^}"
        if [ "$ROLE" = "ADS" ]; then
            cat >> "$LOGFILE" <<EOF
@@ -214,7 +276,7 @@ EOF
 Check_file_exists /etc/hosts
 Check_file_exists /etc/resolv.conf
 grep "127.0.0.53" /etc/resolv.conf
-if [ "$?" -eq 0 ]; then
+if [ "${?}" -eq 0 ]; then
 
     cat >> "$LOGFILE" <<EOF
 systemd stub resolver detected, running command : systemd-resolve --status
@@ -284,14 +346,14 @@ fi
 if [ "$ADDC" = "1" ]; then
     found=0
     # check for bind9_dlz
-    if [ $(grep -c 'server services' /etc/samba/smb.conf) -eq 0 ]; then
+    if [ "$(grep -c 'server services' /etc/samba/smb.conf)" -eq 0 ]; then
         DNS_SERVER='internal'
     else
         # could be using Bind9
         SERVICES=$(grep "server services" "${SMBCONF}")
         SERVER='dns'
         dnscount=${SERVICES//"$SERVER"}
-        if [ $(echo "$SERVICES" | grep -c "\-dns") -eq 1 ]; then
+        if [ "$(echo "$SERVICES" | grep -c "\-dns")" -eq 1 ]; then
             DNS_SERVER='bind9'
         elif [ $(((${#SERVICES} - ${#dnscount}) / ${#SERVER})) -eq 1 ]; then
               DNS_SERVER='bind9'
@@ -310,11 +372,13 @@ if [ "$ADDC" = "1" ]; then
             Check_file_exists "/etc/bind/named.conf.options"
             Check_file_exists "/etc/bind/named.conf.local"
             Check_file_exists "/etc/bind/named.conf.default-zones"
-            echo -n "Samba DNS zone list: " >> $LOGFILE
-            samba-tool dns zonelist ${FQDN} -k yes -P >> $LOGFILE
-            echo  >> $LOGFILE
-            echo "Samba DNS zone list Automated check : " >> $LOGFILE
-            zonelist="$(samba-tool dns zonelist ${FQDN} -k yes -P)"
+	    { 
+            echo -n "Samba DNS zone list: "
+            samba-tool dns zonelist "${FQDN}" -k yes -P
+            echo
+            echo "Samba DNS zone list Automated check : "
+	    } >> $LOGFILE
+            zonelist="$(samba-tool dns zonelist "${FQDN}" -k yes -P)"
             zones="$(echo "${zonelist}" | grep '[p]szZoneName' | awk '{print $NF}' | tr '\n' ' ')"
             while read -r -d ' ' zone
             do
@@ -372,7 +436,7 @@ fi
 #SBINDIR="$(smbd -b | grep 'SBINDIR'  | awk '{ print $NF }')"
 # TODO..add more checks..
 
-running=$(dpkg -l | egrep "$CHECK_PACKAGES1")
+running=$(dpkg -l | grep -E "${CHECK_PACKAGES1}")
 cat >> "$LOGFILE" <<EOF
 
 Installed packages:
