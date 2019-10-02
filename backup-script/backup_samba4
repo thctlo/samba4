@@ -60,7 +60,8 @@
 #    - make keep_day work, in test now.
 # Revised 2017-12-19, Louis van Belle, Thanks Norbert Hanke.:
 #    - Fixed detection of samba/etc with a self compiled samba.
-# Revised 2019-08-01, Louis van Belle, Thanks jkirk.:
+# Revised 2019-08-01, Louis van Belle, Thanks jkirk for reporting it.
+# Revised 2019-10-02, Louis van Belle, Thanks t2semi for reporting it.
 ##
 
 #       Used format in the backup file names.
