@@ -202,12 +202,11 @@ else
     TARARGS="-cj -f "
 fi
 
-
 if [ ! -d $STOREDIR ]
 then
     ${DEBUG} "Missing backup directory $STOREDIR"
     ${DEBUG} "Will now create it."
-    mkdir -p $STOREDIR
+    install -d "${STOREDIR}" -o root -g staff -m 660
 fi
 
 # get where the directory that holds smb.conf is stored
