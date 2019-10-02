@@ -186,12 +186,10 @@ fi
 TARVERSION=$(${CMD_TAR} --version | ${CMD_GREP} 'GNU tar' | ${CMD_AWK} '{print $NF}' | \
              ${CMD_AWK} -F '.' '{print $2}')
 if [ -n "${TARVERSION}" ] && [ "${TARVERSION}" -ge "27" ]; then
-    TARARGS="--acls --xattrs -cjf"
+    TARARGS="-cj --acls --xattrs -f"
 else
-    TARARGS="-cjf"
+    TARARGS="-cj -f"
 fi
-
-
 
 if [ ! -d $STOREDIR ]; then
     ${DEBUG} "Missing backup directory $STOREDIR"
