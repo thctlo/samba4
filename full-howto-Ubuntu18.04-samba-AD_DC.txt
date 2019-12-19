@@ -213,7 +213,7 @@ systemctl enable samba-ad-dc
 ---------------------
 Setup NTP
 cp /etc/ntp.conf{,.backup}
-install -d /var/lib/samba/ntp_signd -m 750 -u root -g ntp
+install -d /var/lib/samba/ntp_signd -m 750 -o root -g ntp
 
 cat << EOF >> /etc/ntp.conf
 #
