@@ -1,0 +1,258 @@
+Part 1.0 The basic Debian Buster Install.
+
+Pre-work and things to consider.
+
+First, read this, there are rules to obey if you setup a server, this is a small checklist i follow.
+
+The checklist for you host-name and domain-name and ip address.
+This is the most important part you should think about.
+
+You need to have this info before you install, because we don’t want to change to much after you installed your server base.
+
+There are rules to follow to make sure you servers work as they should.
+This is covert in the internet standards: Request For Change (RFC).
+And per example, these 2 shown RFC’s involve the “example” setups.
+https://tools.ietf.org/html/rfc2606
+https://tools.ietf.org/html/rfc6761
+
+Domain name choices for these examples/howto’s.
+– StandAlone: Home use: private.example
+– StandAlone/Internet/business use : example.tld
+– Office domainname office.example.tld
+
+! Dont use .local or .lan these are reserved names for Apple’s mDNS
+See: https://en.wikipedia.org/wiki/.local and https://tools.ietf.org/html/rfc6762.
+
+Other good articals with examples:
+https://social.technet.microsoft.com/wiki/contents/articles/34981.active-directory-best-practices-for-internal-domain-and-network-names.aspx.
+And a security consideration (Leaking DNS info): https://www.us-cert.gov/ncas/alerts/TA16-144A 
+
+And since most of my howto’s will involve a Active Directory, this is a must read :
+https://support.microsoft.com/en-us/help/909264/naming-conventions-in-active-directory-for-computers-domains-sites-and
+And looking at table 6.2 here:
+https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-2000-server/cc959336(v=technet.10)
+Example of “lables” as mentioned in table 6.2
+(hostname(=label).office(= label).example(= label).tld( = label)
+
+When you combine these rules, we end up with something like this example: hostname.office.example.tld
+
+We want to setup so its compatible for any setup.
+– hostname , min 1, max 15 characters, a-Z,0-9, –
+– DNS domain name, max total FQDN 254 characters, include the dot’s.
+And 254-15, results in 239 characters left for the domain.tld part.
+
+!!  The FQDN for an Active Directory domain name is limited to 64 bytes, including the dots, 
+an Active directory server name example : s4dc01.office.example.tld
+
+A FQDN = Fully Qualified Domain Name = hostname.domain.tld, can also be : hostname.office.domain.tld.
+But can not be : hostname ( or any one-word domain). 
+
+For any office use of use in combination with internet accessin your server, like web server, mailserver, vpn server then i really recommend to buy a domainname and use it. 
+for about 1-2 dollar a month your set.
+
+Or use https://wiki.debian.org/FreedomBox/Manual/DynamicDNS, a free DDNS service, there are more if these.
+
+
+
+- The Debian Buster Install Basics. 
+- Advanced Options
+- Expert install
+    - Language
+	- Language :  English                -  English           
+	- Country, territory or area: other -> Europe -> Netherlands 
+	- Country to base default locale settings on:   United States        -  en_US.UTF-8
+	- Additional locales: ( not really needed, its easy to add later on when needed. )
+
+    - Access software for blind person.. skip
+    
+    - Configure keyboard
+	- American/English
+	
+    - Detect and mount CDROM
+	- usb-storage, ( keep default )
+	
+    - Load installer components from CDROM
+	- ( i switch to ssh later on, so i enable network-console )
+    
+    - Detect network hardware  
+    
+    - Configure the network
+	- Auto-configure networking
+	    ! Yes, you can install with automatic, but then you need to correct after and move to static IP. 
+		 NOTE1 After install and reboot we will use the setup-systemd-networkd.sh 
+		 to generate the IPv4 compliant files for systemd-networkd 
+	    This setup does not include/support IPv6. (yet) 
+	
+	Check the info, and if ok, hit enter.
+	
+    - Configure the Hostname
+	- Hostname 	: server1ad
+	- Domainname: internal.example.com
+	    NO .local, NO .lan
+	    ( results in server1ad.internal.example.com as FQDN )
+    - Continue installation remotely using SSH.
+	type your pass. ( user name is: installer )
+	( login with ssh, and choose : Start installer (expert mode) )
+    
+    - Set up users and passwords
+	- Enable shadow passwords? Yes
+	- Allow login as root?  No     ( i say No No No... NO ...... NO  ) 
+	- Fullname new user: (What you want.) Linux Admin
+	- Username for your account: linuxadmin
+	- Password for the new user: (default)
+    - Configure the clock
+	- Set the clock using NTP? Yes
+		# For AD-DC's you set a external stable NTP server. 
+		# For a member you set the Ipnumbers of the DC.
+	    - NTP server to use:  ( choose stratum 1 server, ntp1.nl.net ) 
+	    - Timezone : Europe/Amsterdam   ( if you dont see you country/region go back to language, and set that correct. )
+    - Detect disks
+	- Partition disks
+	    Manual (started, choose Guided - user entire disk. )
+		Select disk, Create Empty (msdos) table
+		Select partition, Create new partition... (Stop and think.) 
+		Now, here the minimal i advice is 
+		/   ( a samba AD DC, needed only 1.5GB for the complete OS install, set it to 8Gb as minimal )
+		/var/log ( if you get a log run, it can fillup you partion and damage a samba database, 1Gb-2Gb more the ok )
+		( this example shows 6GB for / and 1Gb /var/log)
+		    New ( 6GB, Primary, beginning )
+			Use as 			: ext4  
+			mount point		: /
+			Mount option	: (SSD, select discard) ( other keep default )
+			Label			: OS_/
+			Reserved blocks	: 5%    
+			Typical usage	: standard    ( partitions with only large files ( iso/mkv/mov ) choose largefile4 ( adviced 500Mb+ files )
+			Bootable flag	: on
+		    Done setting up the partition
+		    
+		    New ( 1GB, Logical, beginning )
+			Use as 			: ext4  
+			mount point		: (Enter Manualy)  /var/log
+			Mount option	: (SSD, select discard) ( other optional, noatime )
+			Label			: OS_/var/log
+			Reserved blocks	: 5%    
+			Typical usage	: standard    ( partitions with only large files ( iso/mkv/mov ) choose largefile4 ( adviced with lots of 500Mb+ files )
+			Bootable flag	: off
+		    Done setting up the partition
+		    
+		    New ( 1,6GB, Logical, beginning )
+			 Use as:         swap area 
+		    Done setting up the partition
+
+		    New ( XXXX GB, Logical, beginning )		! a dedicated partion for all our samba data
+			Use as 			: ext4  
+			mount point		: (Enter Manualy)  /srv/samba
+			Mount option	: (SSD, select discard) ( other optional, noatime )
+			Label			: SRV_/SambaData
+			Reserved blocks	: 5%
+			Typical usage	: standard    ( partitions with only large files ( iso/mkv/mov ) choose largefile4 ( adviced 500Mb+ files )
+			Bootable flag	: off
+		    Done setting up the partition
+			
+		Finish partitioning and write changes to disk ..
+		
+    -  Install the base system
+	    Kernel to install:       		
+			linux-image-VERSIONNR-amd64
+			linux-image-amd64
+
+		If you choose linux-image-amd64, you keep following latest stable kernel ( or from backports if enabled )
+		
+	    Drivers to include in the initrd: 
+		Now, generic is the best option
+		if you know you are never going to move the server to other hardware, then targeted is an option. 
+		i did choose targeted since its a VM i use, and it save me some time.
+		Safest option is "Generic" ! 
+		
+    - Configure the package manager 
+	Scan another CD or DVD? No
+	Use a network mirror? Yes
+	Protocol for file downloads: http ( https is better, but easy to add later on. )
+	Debian archive mirror country: Netherlands   ( choose your country here ) 
+	Debian archive mirror: deb.debian.org or ftp.nl.debian.org
+	 ( read : http://deb.debian.org for more info about this new host. )
+	HTTP proxy information (blank for none):
+	Use non-free software? Yes  ( you might need (linux) firmware packages)
+	Enable source repositories in APT? No
+	Services to use: 	[*] security updates (from security.debian.org)
+			    [*] release updates
+			    [ ] backported software                                                          
+	Now i did not enable backported software, we only enabled it, then its really really needed. 
+	
+    - Select and install software                                     
+	 Participate in the package usage survey? .. what the .. , why not..  it helps debian. you choose.
+	 ( and : This choice can be later modified by running "dpkg-reconfigure popularity-contest".)
+    
+    - Software selection
+	SSH server
+	Standard system utilities
+	
+	All other turn off, yes, even if you want apache or a print server, first the basics. 
+	
+    - Install the GRUB boot loader on a hard disk
+	 Install the GRUB boot loader to the master boot record?   Yes
+	 Device for boot loader installation: ( for me /dev/xvda ) you /dev/sda probely.
+	 Force GRUB installation to the EFI removable media path?  No, ( i suggest, you keep the default )
+    
+    - Finish the installation  
+	Is the system clock set to UTC? ( for me Yes ) you, i suggest, keep the default.
+	
+    - Installation complete
+	Great, Continue, and you server reboots. 
+	
+	- Login, sudo su -  and we going to switch to systemd-networkd now. 
+   wget https://raw.githubusercontent.com/thctlo/debian-scripts/master/setup-systemd-networkd.sh 
+   bash setup-systemd-networkd.sh member
+   
+   ! Note again, its not setup/supported for IPv6!! (yet).
+   - Follow the instructions. 
+   editor lan-member-dev-eno1.network  		# change the ip to static, the script tookover the DHCP ip. 
+   cp lan-member-dev-eno1.network /etc/systemd/network/  # copy the adjusted file to its needed folder for systemd. 
+   mv /etc/network/interfaces{,.backup} 	# backup the old interfaces file
+   
+   # Re-add the lo to interfaces 
+   cat /etc/network/interfaces.backup |head -n9>> /etc/network/interfaces
+   # daemon.log shows ifquery wants it, so we add it. 
+
+   systemctl daemon-reload
+   mv /etc/resolv.conf{,.backup} && ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+   systemctl enable systemd-networkd
+   systemctl restart systemd-networkd
+   systemctl enable  systemd-timesyncd
+   systemctl restart systemd-timesyncd
+   systemctl enable  systemd-resolved
+   systemctl restart systemd-resolved
+
+
+   # If you need to change hostname and domainname, its now time todo it. 
+   # i dont recommend it doing after you installed more software and especially samba. 
+   # if you need a different hostname i suggest, use CNAME in the dns.  
+   # Just make sure your dns A and PTR record are correctly set. 
+   hostnamectl   # verify hostname 
+   cat /etc/hosts # verify 
+   rgrep old-hostname /etc/*  # verify.. 
+   
+   # Setting a new hostname ( without domain )
+   hostnamectl set-hostname new-hostname
+   sed -i 's/old-hostname/new-hostname/g' /etc/hosts
+   
+   # correct the IP if needed if you installed with DHCP ip. 
+   sed -i 's/127.0.1.1/new-IP/g' /etc/hosts
+   
+   # verify the ip in systemd-network
+   cat /etc/systemd/network/lan-member-dev-eno1.network	 !! NOTE, eno1 is my interface, you might have a different one. 
+   editor /etc/systemd/network/lan-member-dev-eno1.network
+   
+   systemctl daemon-reload
+   
+   clear all logs in /var/log  ( a dirty but effective quick clear.. ) 
+   cd /var/log 
+   for x in `ls` ; do > $x ; done
+ !!! watch out with that, done on the wrong place and you can start over. 
+   
+   
+   reboot
+
+   Login and verify all logs, we dont want to day any errors.. 
+   Clear the logs after you verified them. 
+   
