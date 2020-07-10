@@ -2,7 +2,7 @@
 
 # Verified with Debian Buster's shellcheck 0.5.0-3
 
-# Version: function-samba-winbind=0.01
+# Version: function-samba-winbind=0.02
 
 # This script is for checking and setting up winbind for Samba.
 # It can be use on Domain Members and AD Domain Controllers.
