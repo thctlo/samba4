@@ -1,6 +1,6 @@
 #!/bin/bash
 
-V="0.79-B1"
+V="0.79-B2"
 
 # This script is use and tested on a Debian Buster Samba MEMBER
 # This is tested with and AD Backend.
@@ -333,7 +333,7 @@ echo "[samba\$]
     # Optional, yes and windows  defaults are: no/posix
     # acl_xattr:ignore system acls = [yes|no]
     # acl_xattr:default acl style = [posix|windows|everyone]
-    path = ${SAMBA_BASE}/profiles
+    path = ${SAMBA_BASE}/${SAMBA_SHARE_USERSPROFILES}
     #map acl inherit = no
     browseable = yes
     read only = no
@@ -341,7 +341,7 @@ echo "[samba\$]
 [${SAMBA_SHARE_USERS}]
     # Samba/Windows User homedirs.
     # By default the User (And root/Administrator/Domain Admins) are allowed to read/write
-    path = ${SAMBA_BASE}/users
+    path = ${SAMBA_BASE}/${SAMBA_SHARE_USERS}
     browseable = yes
     read only = no
 
