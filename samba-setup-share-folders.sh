@@ -53,7 +53,7 @@ SAMBA_BASEFOLDER="/srv/samba"
 SAMBA_BASEFOLDER_CHMOD=""
 
 ## The share name for "companydata" the folder with all you company data.
-SAMBA_SHARE_COMPDATA="afdelingen"
+SAMBA_SHARE_COMPDATA="companydata"
 # Override the default rights for the users folder (empty=default 3750)
 SAMBA_SHARE_COMPDATA_CHMOD=""
 
