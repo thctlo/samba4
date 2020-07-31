@@ -1,6 +1,6 @@
 #!/bin/bash
 
-V="0.1-B1"
+V="0.2-B1"
 
 # This script is use and tested on a Debian Buster Samba MEMBER
 # This is tested with an AD Backend setup.
@@ -43,7 +43,7 @@ V="0.1-B1"
 # rights : (POSIX)  username:"domain users"
 # Example, a folder created by the user in his homedir.
 
-# getfacl TESTING/ 
+# getfacl TESTING/
 ## file: TESTING/
 ## owner: username
 ## group: domain\040users
@@ -64,18 +64,37 @@ V="0.1-B1"
 #default:other::---
 
 
-# Code starts here, it should not be needed to asjust things here. 
-# Pickup the current location. 
+# Code starts here, it should not be needed to asjust things here.
+# Pickup the current location.
 START_FOLDER="$(pwd)"
+SCRIPT_NAME=$(basename $0)
+
+# You can define the path to the users shared foldere here.
+SAMBA_SHARE_USERS=""
 
 # Get the path to where the user folders are from the config files.
-SAMBA_SHARE_USERS="$(grep path /etc/samba/* |grep users |grep "path = /" |awk '{ print $NF }' |tail -n1)"
+if [ -z "$SAMBA_SHARE_USERS" ]
+then
+    if [ -z "${1}" ]
+    then
+        SAMBA_SHARE_USERS="$(grep path /etc/samba/*.conf |grep users |grep "path = /" |awk '{ print $NF }' |tail -n1)"
+        # did we find the needed settings.
+        if [ -z "$SAMBA_SHARE_USERS" ]
+        then
+            echo "error, unable to detect the users share folder, exiting now."
+            echo "This might happing if the users share isn't called users."
+            echo "rerun the script: $SCRIPT_NAME /path/to/samba/users"
+            exit 1
+        fi
+    else
+        SAMBA_SHARE_USERS="${1}"
+    fi
+fi
 
-# Test if the shared "users" folder exist.
 if [ ! -d "${SAMBA_SHARE_USERS}/" ]
 then
-    echo "error, unable to detect the users share folder, exiting now."
-    echo "This might happing if the users share isnt called users."
+    echo "error, unable to detect the users share folder in variable : SAMBA_SHARE_USERS"
+    echo "rerun the script: $SCRIPT_NAME /path/to/samba/users"
     exit 1
 else
     echo "Detected userhomedir basefolder as : ${SAMBA_SHARE_USERS}"
@@ -97,8 +116,7 @@ do
             # Set the correct right on the folder.
             samba-tool ntacl set "O:S-1-22-1-0G:S-1-22-2-0D:AI(A;OICI;0x001301bf;;;${NAME2SID})(A;ID;0x001200a9;;;S-1-22-2-0)(A;OICIIOID;0x001200a9;;;CG)(A;OICIID;0x001f01ff;;;LA)(A;OICIID;0x001f01ff;;;DA)" "${SAMBA_SHARE_USERS}/${user}"
 
-            # but we cant set recursive with samba-tool. (as far i found)
-            setfacl --recursive --modify user:${user}:rwX,default:user:${user}:rwX "${SAMBA_SHARE_USERS}/${user}"
+            # but we cant set recursive with samba-tool. (as far i found)            setfacl --recursive --modify user:${user}:rwX,default:user:${user}:rwX "${SAMBA_SHARE_USERS}/${user}"
 
         else
             echo "Eror, user folder ${SAMBA_SHARE_USERS}/${user} was not detected, skipping!"
@@ -109,3 +127,4 @@ do
 done
 
 cd ${START_FOLDER} || exit 1
+
