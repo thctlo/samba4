@@ -1,6 +1,6 @@
 #!/bin/bash
 
-V="0.79-B2"
+V="0.79-B3"
 
 # This script is use and tested on a Debian Buster Samba MEMBER
 # This is tested with and AD Backend.
@@ -326,8 +326,9 @@ echo "[samba\$]
     browseable = yes
     read only = no
 
-[${SAMBA_SHARE_USERSPROFILES}\$]
+[${SAMBA_SHARE_USERSPROFILES}]
     # Windows user profiles, Used for/by windows only share.
+    # Add a $ on the end to hide the share-name.
     # By default \"Domain users\" are allowed to read/write
     # https://www.samba.org/samba/docs/current/man-html/vfs_acl_xattr.8.html
     # Optional, yes and windows  defaults are: no/posix
