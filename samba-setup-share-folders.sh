@@ -1,6 +1,6 @@
 #!/bin/bash
 
-V="0.79-B3"
+V="0.79-B4"
 
 # This script is use and tested on a Debian Buster Samba MEMBER
 # This is tested with and AD Backend.
@@ -71,7 +71,7 @@ SAMBA_SHARE_USERSPROFILES_CHMOD=""
 ## Adminstrators control the Share/Folder rights,
 ## Domain Users can create/write folders/files here.
 SAMBA_SHARE_COMPPUBLIC="public"
-# Override the default rights for the profile folder (empty=default 3775)
+# Override the default rights for the profile folder (empty=default 4770)
 SAMBA_SHARE_COMPPUBLIC_CHMOD=""
 
 ####### Dont adjust below here, should not be needed.  ########
