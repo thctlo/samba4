@@ -1,6 +1,6 @@
 #!/bin/bash
 
-V="0.2-B1"
+V="0.3-B1"
 
 # This script is use and tested on a Debian Buster Samba MEMBER
 # This is tested with an AD Backend setup.
@@ -116,8 +116,8 @@ do
             # Set the correct right on the folder.
             samba-tool ntacl set "O:S-1-22-1-0G:S-1-22-2-0D:AI(A;OICI;0x001301bf;;;${NAME2SID})(A;ID;0x001200a9;;;S-1-22-2-0)(A;OICIIOID;0x001200a9;;;CG)(A;OICIID;0x001f01ff;;;LA)(A;OICIID;0x001f01ff;;;DA)" "${SAMBA_SHARE_USERS}/${user}"
 
-            # but we cant set recursive with samba-tool. (as far i found)            setfacl --recursive --modify user:${user}:rwX,default:user:${user}:rwX "${SAMBA_SHARE_USERS}/${user}"
-
+            # but we cant set recursive with samba-tool. (as far i found)            
+            setfacl --recursive --modify user:${user}:rwX,default:user:${user}:rwX "${SAMBA_SHARE_USERS}/${user}"
         else
             echo "Eror, user folder ${SAMBA_SHARE_USERS}/${user} was not detected, skipping!"
         fi
