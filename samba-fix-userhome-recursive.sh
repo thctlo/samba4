@@ -1,6 +1,6 @@
 #!/bin/bash
 
-V="0.3-B1"
+V="0.3-B2"
 
 # This script is use and tested on a Debian Buster Samba MEMBER
 # This is tested with an AD Backend setup.
@@ -33,7 +33,10 @@ V="0.3-B1"
 # When you move/migrating or setup clean or whatever, you can use this to fix
 # some rights. After you copied as Administrator, the user is missing its rights
 # on/in there subfolders/files in the homedirs.
-# The user needs a UID and "Domain Users" needs a gid, preffered before you run it.
+
+# The user needs (MUST HAVE) a UID and "Domain Users" needs a gid, 
+# preffered before you run it.
+# You must set it before you run the script!
 
 # It tries to use the USER_SDDL from the samba-setup-share-folders.sh script.
 # If its not detected, then it will use the same defaults after all.
@@ -42,6 +45,13 @@ V="0.3-B1"
 # any newly created folder by the user in the userhome dir will and up with the
 # rights : (POSIX)  username:"domain users"
 # Example, a folder created by the user in his homedir.
+# ! Note, on the part below, you might see numbers and not "domain\040users"
+# or you dont see SYSTEM but a number, this is correct, simple test shows the folloing. 
+## Example 
+# wbinfo -G 2001  = S-1-5-32-545
+# wbinfo -s S-1-5-32-545 = BUILTIN\Users 4
+# wbinfo -n "BUILTIN\Users"  = S-1-5-32-545 SID_ALIAS (4)
+# Your test might, and will most probly, have a different GID number to start with. 
 
 # getfacl TESTING/
 ## file: TESTING/
