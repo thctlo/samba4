@@ -1,5 +1,7 @@
 #
-# A small howoto for Ubuntu 18.04.
+# A small howoto for Ubuntu 18.04/20.04 
+# updated 7-sept-2020
+#
 # This one is based on my Debian installs.
 #
 # As of 14 Nov 2018, you can use this with the new ubuntu 18.04 repo. ( info below in this file. ) 
@@ -279,12 +281,15 @@ sed -i "/listen-on-v6/a \        tkey-gssapi-keytab \"/var/lib/samba/private/dns
 sed -i "/tkey-gssapi-keytab/i \        // DNS dynamic updates via Kerberos "/var/lib/samba/private/dns.keytab";" /etc/bind/named.conf.options
 echo "// adding the Samba dlopen ( Bind DLZ ) module
 include \"/var/lib/samba/private/named.conf\";" >> /etc/bind/named.conf.local
+# Now open this file : /var/lib/samba/private/named.conf and verify if the correct BIND version is enabled. 
+
 
 # samba 4.9 and up use :
 sed -i "/listen-on-v6/a \        tkey-gssapi-keytab \"/var/lib/samba/bind-dns/dns.keytab\";" /etc/bind/named.conf.options
 sed -i "/tkey-gssapi-keytab/i \        // DNS dynamic updates via Kerberos "/var/lib/samba/bind-dns/dns.keytab";" /etc/bind/named.conf.options
 echo "// adding the Samba dlopen ( Bind DLZ ) module
 include \"/var/lib/samba/bind-dns/named.conf\";" >> /etc/bind/named.conf.local
+# Now open this file : /var/lib/samba/bind-dns/named.conf and verify if the correct BIND version is enabled. 
 
 sed -i "/listen-on-v6/a \        notify no;" /etc/bind/named.conf.options
 sed -i "/notify no/a        empty-zones-enable no;" /etc/bind/named.conf.options
