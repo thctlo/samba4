@@ -1,6 +1,6 @@
 #!/bin/bash
 
-V="0.3-B2"
+V="0.5"
 
 # This script is use and tested on a Debian Buster Samba MEMBER
 # This is tested with an AD Backend setup.
@@ -12,6 +12,8 @@ V="0.3-B2"
 #
 
 # Copyright (C) Louis van Belle 2020
+# Thanks for helping to improve this to : 
+# dott. Marco Gaiarin
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -87,7 +89,7 @@ if [ -z "$SAMBA_SHARE_USERS" ]
 then
     if [ -z "${1}" ]
     then
-        SAMBA_SHARE_USERS="$(grep path /etc/samba/*.conf |grep users |grep "path = /" |awk '{ print $NF }' |tail -n1)"
+        SAMBA_SHARE_USERS="$(samba-tool testparm --section-name="users" --parameter-name="path")"
         # did we find the needed settings.
         if [ -z "$SAMBA_SHARE_USERS" ]
         then
