@@ -1,17 +1,22 @@
 #!/bin/bash
 
-V="0.79-B4"
+V="0.8-B6"
 
 # This script is use and tested on a Debian Buster Samba MEMBER
 # This is tested with and AD Backend.
 # https://wiki.samba.org/index.php/Idmap_config_ad
 #
 # This script will create and setup and configure a basic but secure Samba setup
-# ! Not tested on AD-DC's  (yet) 
+# ! Not tested on AD-DC's  (yet)
 # ! Not tested with RID backends. (yet)
 #
 
-# Copyright (C) Louis van Belle 2020
+#
+# BEFORE YOU RUN THIS SCRIPT, THERE ARE A FEW OBLIGATED THINGS TODO FIRST.
+# 1) The group "Domain Uses" MUST have a GID assigned.
+# 2) There might be more points .. ;-) if i have them, they will be added here.
+
+# Copyright (C) Louis van Belle 2021
 # Special thanks to :
 # Rowland Penny @samba.org
 # Robert E. Wooden @donelsontrophy.com
@@ -53,7 +58,7 @@ SAMBA_BASEFOLDER="/srv/samba"
 SAMBA_BASEFOLDER_CHMOD=""
 
 ## The share name for "companydata" the folder with all you company data.
-SAMBA_SHARE_COMPDATA="companydata"
+SAMBA_SHARE_COMPDATA="afdelingen"
 # Override the default rights for the users folder (empty=default 3750)
 SAMBA_SHARE_COMPDATA_CHMOD=""
 
@@ -335,7 +340,6 @@ echo "[samba\$]
     # acl_xattr:ignore system acls = [yes|no]
     # acl_xattr:default acl style = [posix|windows|everyone]
     path = ${SAMBA_BASE}/${SAMBA_SHARE_USERSPROFILES}
-    #map acl inherit = no
     browseable = yes
     read only = no
 
