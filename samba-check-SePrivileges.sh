@@ -29,22 +29,19 @@ SeCreatePagefilePrivilege SeIncreaseQuotaPrivilege SeChangeNotifyPrivilege \
 SeUndockPrivilege SeManageVolumePrivilege SeImpersonatePrivilege SeCreateGlobalPrivilege \
 SeEnableDelegationPrivilege"
 
+echo "Version check for Samba : $MAIN_VERSION.$MINOR_VERSION.$SUB_VERSION"
+kinit Administrator
 if [ "${MINOR_VERSION}" -lt 15 ]
 then
-    echo "Running check1 for samba : $MAIN_VERSION.$MINOR_VERSION.$SUB_VERSION"
-    kinit Administrator
     for sepriv in $SEPRIVILEGE
     do
         net rpc rights list privileges "$sepriv" -S "$(hostname -f)" --kerberos
     done
 elif [ "${MINOR_VERSION}" -ge 15 ]
 then
-    echo "Running check2 for samba : $MAIN_VERSION.$MINOR_VERSION.$SUB_VERSION"
-    kinit Administrator
     for sepriv in $SEPRIVILEGE
     do
         net rpc rights list privileges "$sepriv" -S "$(hostname -f)" --use-kerberos=required -N
     done
 fi
-
 kdestroy
