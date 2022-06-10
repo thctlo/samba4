@@ -4,6 +4,7 @@
 #
 # 31 Aug 2019 Rowland Penny
 # re-wrote several sections and added time and nsswitch.conf checks
+# 0.3
 # 
 # d.d. 16 Aug 2019
 # 0.21   Added kerberos REALM detection before kinit when starting the script.
